@@ -1,0 +1,23 @@
+# Ambiente virtual
+.venv/
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# PDFs gerados (output)
+teste_output.pdf
+calibracao_output.pdf
+notificacao_aids.pdf
+
+# Ferramentas de desenvolvimento local
+calibrate.py
+calibrate_viewer.html
+viewer.py
+paciente_teste.py
+paciente_teste2.py
+setup.bat
+
+# PDFs de referencia (nao necessarios no deploy)
+Aids_adulto_v5_instr.pdf
+dicionatio de dados.pdf
