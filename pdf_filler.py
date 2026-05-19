@@ -15,7 +15,7 @@ import fitz  # PyMuPDF
 from field_coords import ALL_FIELDS
 
 _CFG_PATH = Path(__file__).parent / "config.toml"
-_PDF_PATH = Path(__file__).parent / "Aids_adulto_v5.pdf"
+_PDF_PATH = Path(__file__).parent / "fichas_sinan" / "Aids_adulto_v5" / "Aids_adulto_v5.pdf"
 
 
 def _load_app_config() -> dict:
