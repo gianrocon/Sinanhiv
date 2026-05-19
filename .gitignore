@@ -6,8 +6,9 @@ __pycache__/
 *.pyc
 
 # PDFs gerados (output)
-teste_output.pdf
-calibracao_output.pdf
+fichas_sinan/Aids_adulto_v5/teste_output.pdf
+fichas_sinan/Aids_adulto_v5/calibracao_output.pdf
+fichas_sinan/Aids_adulto_v5/grid_output.pdf
 notificacao_aids.pdf
 
 # Ferramentas de desenvolvimento local

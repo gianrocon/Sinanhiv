@@ -119,7 +119,8 @@ if __name__ == "__main__":
     from paciente_teste import DADOS_TESTE
 
     out = fill_pdf(DADOS_TESTE)
-    Path("teste_output.pdf").write_bytes(out)
-    print("Arquivo gerado: teste_output.pdf")
+    _out = Path(__file__).parent / "fichas_sinan" / "Aids_adulto_v5" / "teste_output.pdf"
+    _out.write_bytes(out)
+    print(f"Arquivo gerado: {_out}")
     print("Abra e verifique o alinhamento dos campos.")
     print("Se necessario, ajuste as coordenadas em field_coords.py")
