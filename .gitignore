@@ -12,9 +12,7 @@ fichas_sinan/Aids_adulto_v5/grid_output.pdf
 notificacao_aids.pdf
 
 # Ferramentas de desenvolvimento local
-calibrate.py
 calibrate_viewer.html
-viewer.py
 paciente_teste.py
 paciente_teste2.py
 setup.bat
