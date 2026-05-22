@@ -158,7 +158,8 @@ def _widget_for(field: str, label: str, default: str,
 # ---------------------------------------------------------------------------
 
 _MAX_SPAN = 4
-_NARROW_KEYWORDS = ("cep", "ddd", "ibge", "complemento", "codigo", "cartao", "cnpj", "cpf")
+_NARROW_KEYWORDS = ("cep", "ddd", "ibge", "complemento", "codigo", "cartao", "cnpj", "cpf",
+                    "municipio", "logradouro", "numero")
 
 
 def _col_span(field: str, cfg_field: dict, sni_set: set) -> int:
@@ -193,11 +194,14 @@ def _col_span(field: str, cfg_field: dict, sni_set: set) -> int:
     if "options" in cfg_field:
         opts       = cfg_field["options"]
         horizontal = bool(cfg_field.get("horizontal", True))
-        if (not horizontal
-                or len(opts) > 5
-                or sum(len(o) for o in opts) > 80):
-            return 4
-        return 2
+        widget     = cfg_field.get("widget", "selectbox")
+        if widget == "radio":
+            if (not horizontal
+                    or len(opts) > 5
+                    or sum(len(o) for o in opts) > 80):
+                return 4
+            return 1 if len(opts) <= 3 else 2
+        return 1  # selectbox → dropdown compacto
 
     # st_ sem opções customizadas → renderiza como SNI
     if prefix == "st":
@@ -238,7 +242,8 @@ def render_generic(gen: int = 0, form_folder: Path | None = None) -> dict:
         if field in skip_keys:
             continue
         p = meta["page"]
-        by_page.setdefault(p, []).append((meta["y"], field, meta))
+        sort_key = meta.get("display_order", meta["y"])
+        by_page.setdefault(p, []).append((sort_key, field, meta))
 
     data: dict = {}
 

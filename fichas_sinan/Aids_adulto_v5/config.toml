@@ -59,6 +59,12 @@ campos = [
 
 # ── Widgets customizados por campo ──────────────────────────────────────────
 
+[fields.nome_paciente]
+col_span = 3
+
+[fields.nome_mae]
+col_span = 3
+
 [fields.sexo]
 options       = ["M - Masculino", "F - Feminino", "I - Ignorado"]
 values        = ["M", "F", "I"]
@@ -96,6 +102,7 @@ options       = ["1 - Sim", "2 - Nao foi transmissao vertical", "9 - Ignorado"]
 values        = ["1", "2", "9"]
 default_index = 1
 horizontal    = false
+col_span      = 2
 
 [fields.transmissao_sexual]
 widget        = "radio"
@@ -107,6 +114,7 @@ options       = ["1 - Relacoes sexuais com homens",
 values        = ["1", "2", "3", "4", "9"]
 default_index = 0
 horizontal    = false
+col_span      = 2
 
 [fields.lab_triagem_resultado]
 widget        = "radio"
@@ -114,6 +122,10 @@ options       = ["1 - Positivo", "2 - Negativo", "3 - Inconclusivo"]
 values        = ["1", "2", "3"]
 allow_none    = true
 horizontal    = true
+col_span      = 2
+
+[fields.lab_triagem_data]
+col_span      = 2
 
 [fields.lab_rapido1_resultado]
 widget        = "radio"
@@ -137,15 +149,23 @@ allow_none    = true
 horizontal    = true
 
 [fields.lab_confirmatorio_resultado]
-options       = ["", "1 - Positivo/reagente", "2 - Negativo/nao reagente",
+widget        = "radio"
+options       = ["1 - Positivo/reagente", "2 - Negativo/nao reagente",
                  "3 - Inconclusivo", "4 - Nao realizado", "9 - Ignorado"]
-values        = ["", "1", "2", "3", "4", "9"]
-default_index = 4
+values        = ["1", "2", "3", "4", "9"]
+allow_none    = true
+horizontal    = true
+col_span      = 3
+
+[fields.lab_confirmatorio_data]
+col_span      = 1
 
 [fields.transfusao_foi_causa]
-options       = ["", "1 - Sim", "2 - Nao", "3 - Nao se aplica"]
-values        = ["", "1", "2", "3"]
-default_index = 0
+widget        = "radio"
+options       = ["1 - Sim", "2 - Nao", "3 - Nao se aplica"]
+values        = ["1", "2", "3"]
+allow_none    = true
+horizontal    = true
 
 [fields.cdc_cd4_350]
 widget        = "radio"

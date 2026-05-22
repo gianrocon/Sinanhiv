@@ -69,6 +69,12 @@ campos = [
 
 # ── Widgets customizados por campo ──────────────────────────────────────────
 
+[fields.nome_paciente]
+col_span = 3
+
+[fields.nome_mae]
+col_span = 3
+
 [fields.sexo]
 options       = ["M - Masculino", "F - Feminino", "I - Ignorado"]
 values        = ["M", "F", "I"]
