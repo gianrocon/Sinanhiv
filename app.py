@@ -31,7 +31,7 @@ st.markdown("""
 .block-container { padding-top: 0.8rem; padding-bottom: 0.5rem; }
 div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"] { gap: 0rem; }
 h3 { margin-top: 0.6rem !important; margin-bottom: 0.1rem !important; font-size: 1rem !important; }
-hr { margin: 0.4rem 0 !important; }
+hr { margin: 0.8rem 0 !important; border: none !important; border-top: 2px solid #555 !important; opacity: 1 !important; }
 div[data-testid="stRadio"] > label { font-size: 0.85rem; }
 div[data-testid="stRadio"] { margin-bottom: 0rem; }
 div[data-testid="stTextInput"] { margin-bottom: 0rem; }
