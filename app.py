@@ -13,15 +13,10 @@ from pathlib import Path
 
 import streamlit as st
 
+from form_renderer import render_generic, get_fixed_fields
 from pdf_filler import fill_pdf
 
 _FICHAS_DIR = Path(__file__).parent / "fichas_sinan"
-
-# Registro de renderers específicos por pasta de ficha.
-# Fichas sem entrada aqui usam o renderer genérico automaticamente.
-_SPECIFIC_RENDERERS: dict[str, str] = {
-    "Aids_adulto_v5": "aids_adulto",
-}
 
 # ── Configuração da página ───────────────────────────────────────────────────
 
@@ -112,19 +107,6 @@ def _form_is_ready(form_folder: Path) -> bool:
         return "form" in tomllib.load(f)
 
 
-# ── Renderer por ficha ───────────────────────────────────────────────────────
-
-def _get_renderer(form_folder: Path):
-    """Retorna (render_fn, fixed_fn) para a ficha."""
-    renderer_key = _SPECIFIC_RENDERERS.get(form_folder.name)
-    if renderer_key == "aids_adulto":
-        from form_fields import render_all_fields, get_fixed_fields
-        return render_all_fields, get_fixed_fields
-    # Renderer genérico para qualquer outra ficha
-    from form_renderer import render_generic, get_fixed_fields as gff
-    return render_generic, gff
-
-
 # ── Telas ────────────────────────────────────────────────────────────────────
 
 def _show_home() -> None:
@@ -178,15 +160,14 @@ def _show_form(form_folder: Path) -> None:
     if gen_key not in st.session_state:
         st.session_state[gen_key] = 0
 
-    render_fn, fixed_fn = _get_renderer(form_folder)
-    form_data = render_fn(gen=st.session_state[gen_key], form_folder=form_folder)
+    form_data = render_generic(gen=st.session_state[gen_key], form_folder=form_folder)
 
     st.divider()
 
     _pdf_bytes = None
     _pdf_error = None
     try:
-        all_data = {**form_data, **fixed_fn(form_folder)}
+        all_data = {**form_data, **get_fixed_fields(form_folder)}
         # data_diagnostico = data do primeiro exame laboratorial disponível
         _data_diag = form_data.get("lab_triagem_data") or form_data.get("lab_rapidos_data")
         if _data_diag:

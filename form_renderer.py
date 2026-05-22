@@ -14,6 +14,16 @@ automaticamente com base nos prefixos dos nomes dos campos (convenção SINAN):
 
 Campos em [fixed] e [hidden] são omitidos do formulário.
 Valores padrão vêm de [defaults].
+Campos em [form] sni_fields recebem radio Sim/Não/Ignorado automaticamente,
+independente do prefixo.
+
+Opções em [fields.<campo>]:
+  options       → lista de rótulos exibidos
+  values        → lista de valores retornados (1:1 com options); se ausente, retorna o rótulo
+  widget        → "selectbox" (padrão) ou "radio"
+  default_index → índice selecionado por padrão (padrão: 0)
+  horizontal    → true (padrão) ou false; só para widget="radio"
+  allow_none    → true para radio sem seleção padrão (retorna "" se nada selecionado)
 """
 
 from __future__ import annotations
@@ -26,6 +36,9 @@ from pathlib import Path
 import streamlit as st
 
 _GEN: int = 0
+
+_SNI_OPTIONS = ["Sim (1)", "Não (2)", "Ignorado (9)"]
+_SNI_VALUES  = ["1", "2", "9"]
 
 
 def _k(key: str) -> str:
@@ -46,13 +59,10 @@ def _load_coords_raw(form_folder: Path) -> dict:
 
 
 def get_fixed_fields(form_folder: Path) -> dict:
-    """
-    Retorna campos ocultos: [fixed] com valores fixos + [hidden] como vazios.
-    """
+    """Retorna campos ocultos: [fixed] com valores fixos + [hidden] como vazios."""
     cfg = _load_cfg(form_folder)
     fixed: dict = dict(cfg.get("fixed", {}))
 
-    # data de notificação é sempre hoje
     if "data_notificacao" in _load_coords_raw(form_folder):
         fixed.setdefault("data_notificacao", date.today())
 
@@ -79,37 +89,58 @@ def _date_input(label: str, key: str) -> date | None:
     return None
 
 
-def _radio_sni(label: str, key: str) -> str:
+def _radio_sni(label: str, key: str, default_index: int = 1) -> str:
     """Radio padrão Sim/Não/Ignorado."""
-    opts = {"Sim (1)": "1", "Não (2)": "2", "Ignorado (9)": "9"}
-    choice = st.radio(label, list(opts.keys()), index=1,
+    choice = st.radio(label, _SNI_OPTIONS, index=default_index,
                       horizontal=True, key=_k(key))
-    return opts[choice]
+    return _SNI_VALUES[_SNI_OPTIONS.index(choice)]
 
 
-def _widget_for(field: str, label: str, default: str, cfg_field: dict) -> str | date | None:
+def _resolve_value(choice, opts: list, values: list | None) -> str:
+    """Retorna o código correspondente à opção selecionada."""
+    if choice is None:
+        return ""
+    if values is None:
+        return choice
+    try:
+        return values[opts.index(choice)]
+    except (ValueError, IndexError):
+        return choice
+
+
+def _widget_for(field: str, label: str, default: str,
+                cfg_field: dict, sni_set: set) -> str | date | None:
     """Escolhe o widget adequado para o campo."""
     prefix = field.split("_")[0]
 
-    # Opções customizadas em config.toml [fields.<campo>]
+    # Campos listados explicitamente em [form] sni_fields → Sim/Não/Ignorado
+    if field in sni_set:
+        return _radio_sni(label, field)
+
+    # Opções customizadas em [fields.<campo>]
     if "options" in cfg_field:
-        opts = cfg_field["options"]
-        widget = cfg_field.get("widget", "selectbox")
+        opts          = cfg_field["options"]
+        values        = cfg_field.get("values")
+        widget        = cfg_field.get("widget", "selectbox")
         default_index = int(cfg_field.get("default_index", 0))
+        horizontal    = bool(cfg_field.get("horizontal", True))
+        allow_none    = bool(cfg_field.get("allow_none", False))
+
         if widget == "radio":
-            choice = st.radio(label, opts, index=default_index,
-                              horizontal=True, key=_k(field))
-            return choice
+            idx    = None if allow_none else default_index
+            choice = st.radio(label, opts, index=idx,
+                              horizontal=horizontal, key=_k(field))
+            return _resolve_value(choice, opts, values)
         else:
             choice = st.selectbox(label, opts, index=default_index,
                                   key=_k(field))
-            return choice
+            return _resolve_value(choice, opts, values)
 
     # Data
     if prefix == "dt":
         return _date_input(label, field)
 
-    # Booleano SINAN (st_*): Sim/Não/Ignorado
+    # Booleano SINAN por prefixo (st_*)
     if prefix == "st":
         return _radio_sni(label, field)
 
@@ -127,7 +158,7 @@ def _widget_for(field: str, label: str, default: str, cfg_field: dict) -> str | 
 
 def render_generic(gen: int = 0, form_folder: Path | None = None) -> dict:
     """
-    Renderiza o formulário genérico a partir do field_coords.json e config.toml.
+    Renderiza o formulário a partir do field_coords.json e config.toml da ficha.
     Retorna {campo: valor} com os dados preenchidos pelo usuário.
     """
     global _GEN
@@ -136,16 +167,16 @@ def render_generic(gen: int = 0, form_folder: Path | None = None) -> dict:
     if form_folder is None:
         raise ValueError("form_folder é obrigatório para o renderer genérico")
 
-    cfg = _load_cfg(form_folder)
+    cfg        = _load_cfg(form_folder)
     coords_raw = _load_coords_raw(form_folder)
 
-    defaults     = cfg.get("defaults", {})
-    fixed_keys   = set(cfg.get("fixed", {}).keys())
-    hidden_keys  = set(cfg.get("hidden", {}).get("campos", []))
-    fields_cfg   = cfg.get("fields", {})
-    skip_keys    = fixed_keys | hidden_keys
+    defaults    = cfg.get("defaults", {})
+    fixed_keys  = set(cfg.get("fixed", {}).keys())
+    hidden_keys = set(cfg.get("hidden", {}).get("campos", []))
+    fields_cfg  = cfg.get("fields", {})
+    sni_fields  = set(cfg.get("form", {}).get("sni_fields", []))
+    skip_keys   = fixed_keys | hidden_keys
 
-    # Agrupa campos por página, na ordem y crescente (leitura natural da ficha)
     by_page: dict[int, list[tuple[float, str, dict]]] = {}
     for field, meta in coords_raw.items():
         if field in skip_keys:
@@ -164,7 +195,7 @@ def render_generic(gen: int = 0, form_folder: Path | None = None) -> dict:
             default = str(defaults.get(field, ""))
             cfg_f   = fields_cfg.get(field, {})
 
-            value = _widget_for(field, label, default, cfg_f)
+            value = _widget_for(field, label, default, cfg_f, sni_fields)
             data[field] = value
 
     return data
