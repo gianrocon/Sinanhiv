@@ -116,6 +116,8 @@ def _widget_for(field: str, label: str, default: str,
     # Campos listados explicitamente em [form] sni_fields → Sim/Não/Ignorado
     if field in sni_set:
         sni_default = int(cfg_field.get("default_index", 1))
+        if default in _SNI_VALUES:
+            sni_default = _SNI_VALUES.index(default)
         return _radio_sni(label, field, default_index=sni_default)
 
     # Opções customizadas em [fields.<campo>]
@@ -127,8 +129,17 @@ def _widget_for(field: str, label: str, default: str,
         horizontal    = bool(cfg_field.get("horizontal", True))
         allow_none    = bool(cfg_field.get("allow_none", False))
 
+        # Resolve índice a partir do valor de prefill
+        if default:
+            lookup = values if values else opts
+            if default in lookup:
+                default_index = lookup.index(default)
+
         if widget == "radio":
-            idx    = None if allow_none else default_index
+            if default and default in (values if values else opts):
+                idx = (values if values else opts).index(default)
+            else:
+                idx = None if allow_none else default_index
             choice = st.radio(label, opts, index=idx,
                               horizontal=horizontal, key=_k(field))
             return _resolve_value(choice, opts, values)
@@ -214,10 +225,15 @@ def _col_span(field: str, cfg_field: dict, sni_set: set) -> int:
 # Renderer principal
 # ---------------------------------------------------------------------------
 
-def render_generic(gen: int = 0, form_folder: Path | None = None) -> dict:
+def render_generic(gen: int = 0, form_folder: Path | None = None,
+                   prefill: dict | None = None) -> dict:
     """
     Renderiza o formulário a partir do field_coords.json e config.toml da ficha.
     Retorna {campo: valor} com os dados preenchidos pelo usuário.
+
+    prefill: valores importados (ex: área de transferência) que sobrepõem os
+             defaults do config.toml; aplicados apenas na criação dos widgets
+             (chave nova), portanto não sobrescrevem edições posteriores.
     """
     global _GEN
     _GEN = gen
@@ -228,7 +244,8 @@ def render_generic(gen: int = 0, form_folder: Path | None = None) -> dict:
     cfg        = _load_cfg(form_folder)
     coords_raw = _load_coords_raw(form_folder)
 
-    defaults      = cfg.get("defaults", {})
+    _prefill   = prefill or {}
+    defaults   = {**cfg.get("defaults", {}), **_prefill}  # prefill sobrepõe defaults
     fixed_keys    = set(cfg.get("fixed", {}).keys())
     hidden_keys   = set(cfg.get("hidden", {}).get("campos", []))
     fields_cfg    = cfg.get("fields", {})

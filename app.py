@@ -8,15 +8,34 @@ Para rodar:
 
 from __future__ import annotations
 
+import json
 import tomllib
 from pathlib import Path
 
 import streamlit as st
+import streamlit.components.v1 as _components
 
 from form_renderer import render_generic, get_fixed_fields
 from pdf_filler import fill_pdf
+from clipboard_import import parse_clipboard
 
 _FICHAS_DIR = Path(__file__).parent / "fichas_sinan"
+
+# Campos demográficos transferidos entre fichas na navegação cruzada
+_COMMON_FIELDS = [
+    "unidade_saude", "codigo_unidade_saude",
+    "nome_paciente", "data_nascimento",
+    "gestante", "sexo", "raca_cor", "escolaridade",
+    "cartao_sus", "nome_mae",
+    "municipio_residencia", "uf_residencia",
+    "bairro", "logradouro", "complemento", "numero_residencia", "cep",
+]
+
+# Mapeamento de fichas irmãs: nome_pasta → [(label_botão, nome_pasta_destino)]
+_SIBLING_LINKS: dict[str, list[tuple[str, str]]] = {
+    "Aids_adulto_v5":  [("SINAN Tuberculose", "Tuberculose_v5")],
+    "Tuberculose_v5":  [("SINAN HIV",          "Aids_adulto_v5")],
+}
 
 # ── Configuração da página ───────────────────────────────────────────────────
 
@@ -178,6 +197,17 @@ def _show_home() -> None:
                               use_container_width=True, disabled=True)
 
 
+def _collect_common(form_data: dict) -> dict:
+    """Extrai os campos comuns do form_data atual para prefill da ficha destino."""
+    result = {}
+    for field in _COMMON_FIELDS:
+        val = form_data.get(field)
+        if val is None or val == "":
+            continue
+        result[field] = val.strftime("%d/%m/%Y") if hasattr(val, "strftime") else str(val)
+    return result
+
+
 def _show_form(form_folder: Path) -> None:
     meta = _load_form_meta(form_folder)
     name = meta.get("name", form_folder.name)
@@ -186,13 +216,72 @@ def _show_form(form_folder: Path) -> None:
 
     if st.button("← Voltar à lista"):
         st.session_state.current_form = None
+        st.session_state.pop(f"autofocused_{form_folder.name}", None)
+        st.session_state.pop(f"form_came_from_{form_folder.name}", None)
         st.rerun()
 
-    gen_key = f"form_gen_{form_folder.name}"
+    gen_key     = f"form_gen_{form_folder.name}"
+    prefill_key = f"form_prefill_{form_folder.name}"
     if gen_key not in st.session_state:
         st.session_state[gen_key] = 0
 
-    form_data = render_generic(gen=st.session_state[gen_key], form_folder=form_folder)
+    came_from = bool(st.session_state.get(f"form_came_from_{form_folder.name}"))
+
+    # ── Importar dados do paciente (omitido quando veio de outra ficha) ──────
+    if not came_from:
+        _autofocus_key = f"autofocused_{form_folder.name}"
+        if _autofocus_key not in st.session_state:
+            st.session_state[_autofocus_key] = True
+            _components.html(
+                "<script>"
+                "(function(){"
+                "  function f(){"
+                "    var el=window.parent.document.querySelector('input[type=\"text\"]');"
+                "    if(el){el.focus();}else{setTimeout(f,50);}"
+                "  }"
+                "  setTimeout(f,200);"
+                "})();"
+                "</script>",
+                height=0,
+            )
+
+        _paste_key = f"clipboard_paste_{form_folder.name}"
+        _warn_key  = f"import_warn_{form_folder.name}"
+
+        def _do_import():
+            text = st.session_state.get(_paste_key, "")
+            parsed = parse_clipboard(text)
+            if not parsed:
+                st.session_state[_warn_key] = "Nenhum campo reconhecido no texto colado."
+                return
+            coords_keys = set(json.load(
+                open(form_folder / "field_coords.json", encoding="utf-8")
+            ).keys())
+            filtered = {k: v for k, v in parsed.items() if k in coords_keys}
+            if filtered:
+                st.session_state[prefill_key] = filtered
+                st.session_state[gen_key] += 1
+                st.session_state[_paste_key] = ""
+                st.session_state.pop(_warn_key, None)
+            else:
+                st.session_state[_warn_key] = "Nenhum campo reconhecido corresponde a esta ficha."
+
+        st.markdown("**Importar dados do paciente**")
+        st.text_input(
+            "Cole o texto copiado do sistema",
+            placeholder="Nome: ... | SUS: ... | Nascimento: ... | Mãe: ...",
+            key=_paste_key,
+            label_visibility="collapsed",
+            on_change=_do_import,
+        )
+        if st.button("Importar", key=f"btn_import_{form_folder.name}"):
+            _do_import()
+        if warn := st.session_state.get(_warn_key):
+            st.warning(warn)
+
+    prefill = st.session_state.get(prefill_key)
+    form_data = render_generic(gen=st.session_state[gen_key], form_folder=form_folder,
+                               prefill=prefill)
 
     st.divider()
 
@@ -200,7 +289,6 @@ def _show_form(form_folder: Path) -> None:
     _pdf_error = None
     try:
         all_data = {**form_data, **get_fixed_fields(form_folder)}
-        # data_diagnostico = data do primeiro exame laboratorial disponível
         _data_diag = form_data.get("lab_triagem_data") or form_data.get("lab_rapidos_data")
         if _data_diag:
             all_data["data_diagnostico"] = _data_diag
@@ -208,23 +296,51 @@ def _show_form(form_folder: Path) -> None:
     except Exception as e:
         _pdf_error = e
 
-    col1, col2 = st.columns(2)
-    with col1:
+    siblings = _SIBLING_LINKS.get(form_folder.name, [])
+    # Layout: Baixar PDF | Nova Notificação | ← Voltar | [irmãs...]
+    n_extra = 1 + len(siblings)  # Voltar + irmãs
+    bottom_cols = st.columns([2, 2] + [1] * n_extra)
+
+    with bottom_cols[0]:
         if _pdf_bytes is not None:
-            file_name = f"notificacao_{form_folder.name.lower()}.pdf"
             st.download_button(
                 label="Baixar PDF",
                 data=_pdf_bytes,
-                file_name=file_name,
+                file_name=f"notificacao_{form_folder.name.lower()}.pdf",
                 mime="application/pdf",
                 use_container_width=True,
             )
         else:
             st.error(f"Erro ao preparar PDF: {_pdf_error}")
-    with col2:
+
+    with bottom_cols[1]:
         if st.button("Nova Notificação", use_container_width=True):
             st.session_state[gen_key] = st.session_state.get(gen_key, 0) + 1
+            st.session_state.pop(prefill_key, None)
+            st.session_state.pop(f"form_came_from_{form_folder.name}", None)
             st.rerun()
+
+    with bottom_cols[2]:
+        if st.button("← Voltar", use_container_width=True, key=f"voltar_bottom_{form_folder.name}"):
+            st.session_state.current_form = None
+            st.session_state.pop(f"autofocused_{form_folder.name}", None)
+            st.session_state.pop(f"form_came_from_{form_folder.name}", None)
+            st.rerun()
+
+    for i, (sib_label, dest_name) in enumerate(siblings):
+        dest_folder = _FICHAS_DIR / dest_name
+        if not dest_folder.exists():
+            continue
+        with bottom_cols[3 + i]:
+            if st.button(f"{sib_label} →", use_container_width=True,
+                         key=f"nav_{dest_name}_{form_folder.name}"):
+                common = _collect_common(form_data)
+                dest_gen_key = f"form_gen_{dest_name}"
+                st.session_state[f"form_prefill_{dest_name}"] = common
+                st.session_state[f"form_came_from_{dest_name}"] = str(form_folder)
+                st.session_state[dest_gen_key] = st.session_state.get(dest_gen_key, 0) + 1
+                st.session_state.current_form = str(dest_folder)
+                st.rerun()
 
 
 # ── Roteamento ───────────────────────────────────────────────────────────────
