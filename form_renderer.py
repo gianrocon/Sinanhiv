@@ -76,8 +76,8 @@ def get_fixed_fields(form_folder: Path) -> dict:
 # Widgets auxiliares
 # ---------------------------------------------------------------------------
 
-def _date_input(label: str, key: str) -> date | None:
-    raw = st.text_input(label, placeholder="dd/mm/aaaa", key=_k(key))
+def _date_input(label: str, key: str, default: str = "") -> date | None:
+    raw = st.text_input(label, value=default, placeholder="dd/mm/aaaa", key=_k(key))
     if not raw:
         return None
     for fmt in ("%d/%m/%Y", "%d%m%Y"):
@@ -115,7 +115,8 @@ def _widget_for(field: str, label: str, default: str,
 
     # Campos listados explicitamente em [form] sni_fields → Sim/Não/Ignorado
     if field in sni_set:
-        return _radio_sni(label, field)
+        sni_default = int(cfg_field.get("default_index", 1))
+        return _radio_sni(label, field, default_index=sni_default)
 
     # Opções customizadas em [fields.<campo>]
     if "options" in cfg_field:
@@ -138,7 +139,7 @@ def _widget_for(field: str, label: str, default: str,
 
     # Data
     if prefix == "dt":
-        return _date_input(label, field)
+        return _date_input(label, field, default=default)
 
     # Booleano SINAN por prefixo (st_*)
     if prefix == "st":
@@ -193,6 +194,8 @@ def render_generic(gen: int = 0, form_folder: Path | None = None) -> dict:
         for _, field, meta in fields_on_page:
             label   = meta.get("label", field)
             default = str(defaults.get(field, ""))
+            if default == "today":
+                default = date.today().strftime("%d/%m/%Y")
             cfg_f   = fields_cfg.get(field, {})
 
             value = _widget_for(field, label, default, cfg_f, sni_fields)
