@@ -166,6 +166,7 @@ options       = ["1 - Sim", "2 - Nao", "3 - Nao se aplica"]
 values        = ["1", "2", "3"]
 allow_none    = true
 horizontal    = true
+col_span      = 4
 
 [fields.cdc_cd4_350]
 widget        = "radio"

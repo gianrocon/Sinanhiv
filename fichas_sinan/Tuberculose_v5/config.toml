@@ -111,6 +111,10 @@ options       = ["1 - Caso Novo", "2 - Recidiva", "3 - Reingresso Apos Abandono"
                  "4 - Nao Sabe", "5 - Transferencia", "6 - Pos-obito"]
 values        = ["1", "2", "3", "4", "5", "6"]
 default_index = 0
+col_span      = 3
+
+[fields.ds_extrapulmonar_outro]
+col_span      = 4
 
 [fields.tp_forma]
 widget        = "radio"

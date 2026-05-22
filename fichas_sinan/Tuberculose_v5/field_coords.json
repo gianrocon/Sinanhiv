@@ -291,18 +291,21 @@
     "page": 1,
     "x": 329.7,
     "y": 587.4,
+    "display_order": 586,
     "label": "Agravo: Tabagismo"
   },
   "st_agravo_outro": {
     "page": 1,
-    "x": 449.2,
-    "y": 583.9,
+    "x": 389.2,
+    "y": 587.3,
+    "display_order": 590,
     "label": "Agravo: Outras"
   },
   "ds_agravo_outro": {
     "page": 1,
-    "x": 430.0,
-    "y": 596.0,
+    "x": 454.2,
+    "y": 583.6,
+    "display_order": 591,
     "label": "Agravo Outra (descrição)"
   },
   "st_baciloscopia_escarro": {
