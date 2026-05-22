@@ -14,6 +14,7 @@ sni_fields  = [
 apos = [
   "tp_pop_rua",               # após pop. vulnerável → antes de Forma/Extrapulmonar
   "ds_extrapulmonar_outro",   # após Forma/Extrapulmonar → antes de agravos
+  "ds_agravo_outro",          # após agravos → antes de Baciloscopia do Escarro
 ]
 
 [defaults]
