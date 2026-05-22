@@ -13,7 +13,6 @@ import tomllib
 from pathlib import Path
 
 import streamlit as st
-import streamlit.components.v1 as _components
 
 from form_renderer import render_generic, get_fixed_fields
 from pdf_filler import fill_pdf
@@ -233,17 +232,18 @@ def _show_form(form_folder: Path) -> None:
         _autofocus_key = f"autofocused_{form_folder.name}"
         if _autofocus_key not in st.session_state:
             st.session_state[_autofocus_key] = True
-            _components.html(
+            st.html(
                 "<script>"
                 "(function(){"
                 "  function f(){"
-                "    var el=window.parent.document.querySelector('input[type=\"text\"]');"
+                "    var doc=(window.parent!==window)"
+                "      ?window.parent.document:document;"
+                "    var el=doc.querySelector('input[type=\"text\"]');"
                 "    if(el){el.focus();}else{setTimeout(f,50);}"
                 "  }"
                 "  setTimeout(f,200);"
                 "})();"
-                "</script>",
-                height=0,
+                "</script>"
             )
 
         _paste_key = f"clipboard_paste_{form_folder.name}"
