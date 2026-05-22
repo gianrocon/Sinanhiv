@@ -67,12 +67,18 @@ def _normalize_date(value: str) -> str:
     return v
 
 
+def _is_date_field(field_name: str) -> bool:
+    fn = field_name.lower()
+    return fn.startswith(("dt_", "data_")) or fn.endswith("_data")
+
+
 def _needs_white_bg(field_name: str, raw_value) -> bool:
     if isinstance(raw_value, date):
         return True
     fn = field_name.lower()
     return (
-        any(fn.startswith(p) for p in _WHITE_BG_PREFIXES)
+        _is_date_field(fn)
+        or any(fn.startswith(p) for p in _WHITE_BG_PREFIXES)
         or any(kw in fn for kw in _WHITE_BG_KEYWORDS)
     )
 
@@ -120,7 +126,7 @@ def fill_pdf(form_data: dict, form_folder: Path) -> bytes:
         if isinstance(raw_value, date):
             value = raw_value.strftime("%d/%m/%Y")
             fs = font_size_date
-        elif field_name.startswith(("dt_", "data_")):
+        elif _is_date_field(field_name):
             value = _normalize_date(str(raw_value))
             fs = font_size_date
         else:
