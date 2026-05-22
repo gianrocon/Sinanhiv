@@ -10,6 +10,12 @@ sni_fields  = [
   "tp_antirretroviral_tratament",
 ]
 
+[dividers]
+apos = [
+  "tp_pop_rua",               # após pop. vulnerável → antes de Forma/Extrapulmonar
+  "ds_extrapulmonar_outro",   # após Forma/Extrapulmonar → antes de agravos
+]
+
 [defaults]
 unidade_saude        = "CTA Marymar Novaes"
 codigo_unidade_saude = "0072"
