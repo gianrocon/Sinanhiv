@@ -154,6 +154,59 @@ def _widget_for(field: str, label: str, default: str,
 
 
 # ---------------------------------------------------------------------------
+# Layout em colunas
+# ---------------------------------------------------------------------------
+
+_MAX_SPAN = 4
+_NARROW_KEYWORDS = ("cep", "ddd", "ibge", "complemento", "codigo", "cartao", "cnpj", "cpf")
+
+
+def _col_span(field: str, cfg_field: dict, sni_set: set) -> int:
+    """Largura relativa do campo para layout em colunas (1 = estreito … 4 = toda a largura)."""
+    if "col_span" in cfg_field:
+        return int(cfg_field["col_span"])
+
+    fn     = field.lower()
+    prefix = fn.split("_")[0]
+
+    # Datas
+    if prefix in ("dt", "data") or fn.endswith("_data"):
+        return 1
+
+    # UF (2 chars)
+    if prefix == "uf" or (prefix in ("sg", "co", "id") and "uf" in fn):
+        return 1
+
+    # Códigos e números padrão
+    if prefix in ("nu", "co", "id", "sg"):
+        return 1
+
+    # Palavras-chave de campos curtos (sem prefixo padrão)
+    if any(kw in fn for kw in _NARROW_KEYWORDS):
+        return 1
+
+    # SNI radio (Sim/Não/Ignorado)
+    if field in sni_set:
+        return 2
+
+    # Opções customizadas
+    if "options" in cfg_field:
+        opts       = cfg_field["options"]
+        horizontal = bool(cfg_field.get("horizontal", True))
+        if (not horizontal
+                or len(opts) > 5
+                or sum(len(o) for o in opts) > 80):
+            return 4
+        return 2
+
+    # st_ sem opções customizadas → renderiza como SNI
+    if prefix == "st":
+        return 2
+
+    return 2
+
+
+# ---------------------------------------------------------------------------
 # Renderer principal
 # ---------------------------------------------------------------------------
 
@@ -193,14 +246,46 @@ def render_generic(gen: int = 0, form_folder: Path | None = None) -> dict:
         st.subheader(f"Página {page_num}")
         fields_on_page = sorted(by_page[page_num], key=lambda t: t[0])
 
-        for _, field, meta in fields_on_page:
-            label   = meta.get("label", field)
-            default = str(defaults.get(field, ""))
-            if default == "today":
-                default = date.today().strftime("%d/%m/%Y")
-            cfg_f   = fields_cfg.get(field, {})
+        # Agrupar campos em linhas de até _MAX_SPAN colunas
+        rows: list[list] = []
+        cur_row: list    = []
+        cur_total        = 0
+        for item in fields_on_page:
+            _, field, _ = item
+            span = _col_span(field, fields_cfg.get(field, {}), sni_fields)
+            if cur_total + span > _MAX_SPAN and cur_row:
+                rows.append(cur_row)
+                cur_row   = [(item, span)]
+                cur_total = span
+            else:
+                cur_row.append((item, span))
+                cur_total += span
+        if cur_row:
+            rows.append(cur_row)
 
-            value = _widget_for(field, label, default, cfg_f, sni_fields)
-            data[field] = value
+        # Renderizar linhas
+        for row_items in rows:
+            spans = [s for _, s in row_items]
+
+            if len(row_items) == 1:
+                item, _ = row_items[0]
+                _, field, meta = item
+                label   = meta.get("label", field)
+                default = str(defaults.get(field, ""))
+                if default == "today":
+                    default = date.today().strftime("%d/%m/%Y")
+                data[field] = _widget_for(field, label, default,
+                                          fields_cfg.get(field, {}), sni_fields)
+            else:
+                cols = st.columns(spans)
+                for col, (item, _) in zip(cols, row_items):
+                    _, field, meta = item
+                    label   = meta.get("label", field)
+                    default = str(defaults.get(field, ""))
+                    if default == "today":
+                        default = date.today().strftime("%d/%m/%Y")
+                    with col:
+                        data[field] = _widget_for(field, label, default,
+                                                   fields_cfg.get(field, {}), sni_fields)
 
     return data
