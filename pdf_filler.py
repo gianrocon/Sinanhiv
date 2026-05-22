@@ -16,6 +16,7 @@ import fitz  # PyMuPDF
 
 _FICHAS_DIR = Path(__file__).parent / "fichas_sinan"
 
+_WHITE_BG_PREFIXES = ("dt_", "nu_", "co_", "id_")
 _WHITE_BG_KEYWORDS = ("codigo", "ibge", "cep", "telefone", "cartao")
 
 _UPPERCASE_FIELDS = {
@@ -56,10 +57,24 @@ def _find_pdf(form_folder: Path) -> Path:
     return sorted(candidates)[0]
 
 
+def _normalize_date(value: str) -> str:
+    """Normaliza string de data para dd/mm/aaaa (aceita dd/mm/aaaa ou ddmmaaaa)."""
+    v = value.strip()
+    if len(v) == 10 and v[2] == "/" and v[5] == "/":
+        return v
+    if len(v) == 8 and v.isdigit():
+        return f"{v[0:2]}/{v[2:4]}/{v[4:8]}"
+    return v
+
+
 def _needs_white_bg(field_name: str, raw_value) -> bool:
     if isinstance(raw_value, date):
         return True
-    return any(kw in field_name.lower() for kw in _WHITE_BG_KEYWORDS)
+    fn = field_name.lower()
+    return (
+        any(fn.startswith(p) for p in _WHITE_BG_PREFIXES)
+        or any(kw in fn for kw in _WHITE_BG_KEYWORDS)
+    )
 
 
 def _draw_white_bg(page, x: float, y: float, text: str,
@@ -104,6 +119,9 @@ def fill_pdf(form_data: dict, form_folder: Path) -> bytes:
 
         if isinstance(raw_value, date):
             value = raw_value.strftime("%d/%m/%Y")
+            fs = font_size_date
+        elif field_name.startswith("dt_"):
+            value = _normalize_date(str(raw_value))
             fs = font_size_date
         else:
             value = str(raw_value).strip()

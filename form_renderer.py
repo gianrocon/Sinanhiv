@@ -177,6 +177,8 @@ def render_generic(gen: int = 0, form_folder: Path | None = None) -> dict:
     fields_cfg  = cfg.get("fields", {})
     sni_fields  = set(cfg.get("form", {}).get("sni_fields", []))
     skip_keys   = fixed_keys | hidden_keys
+    if "data_notificacao" in coords_raw:
+        skip_keys.add("data_notificacao")
 
     by_page: dict[int, list[tuple[float, str, dict]]] = {}
     for field, meta in coords_raw.items():
