@@ -138,7 +138,7 @@ def _widget_for(field: str, label: str, default: str,
             return _resolve_value(choice, opts, values)
 
     # Data
-    if prefix == "dt":
+    if prefix in ("dt", "data"):
         return _date_input(label, field, default=default)
 
     # Booleano SINAN por prefixo (st_*)

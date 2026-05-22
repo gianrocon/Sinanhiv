@@ -16,7 +16,7 @@ import fitz  # PyMuPDF
 
 _FICHAS_DIR = Path(__file__).parent / "fichas_sinan"
 
-_WHITE_BG_PREFIXES = ("dt_", "nu_", "co_", "id_")
+_WHITE_BG_PREFIXES = ("dt_", "data_", "nu_", "co_", "id_")
 _WHITE_BG_KEYWORDS = ("codigo", "ibge", "cep", "telefone", "cartao")
 
 _UPPERCASE_FIELDS = {
@@ -120,7 +120,7 @@ def fill_pdf(form_data: dict, form_folder: Path) -> bytes:
         if isinstance(raw_value, date):
             value = raw_value.strftime("%d/%m/%Y")
             fs = font_size_date
-        elif field_name.startswith("dt_"):
+        elif field_name.startswith(("dt_", "data_")):
             value = _normalize_date(str(raw_value))
             fs = font_size_date
         else:
