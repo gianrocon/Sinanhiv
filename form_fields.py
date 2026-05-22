@@ -1,8 +1,8 @@
 """
-Widgets Streamlit para todos os campos da Ficha SINAN AIDS Adulto.
+Renderer específico da Ficha SINAN AIDS Adulto.
 
-- render_all_fields(gen): campos visiveis ao usuario, retorna dict {campo: valor}
-- get_fixed_fields():     campos ocultos injetados automaticamente no PDF
+- render_all_fields(gen, form_folder): campos visíveis, retorna {campo: valor}
+- get_fixed_fields(form_folder):       campos ocultos injetados automaticamente
 """
 
 from __future__ import annotations
@@ -13,52 +13,33 @@ from pathlib import Path
 
 import streamlit as st
 
-_CFG_PATH = Path(__file__).parent / "config.toml"
-
-# Sufixo de geracao — muda ao clicar em "Nova Notificacao", forcando reset dos widgets
 _FORM_GEN: int = 0
 
 
 def _k(key: str) -> str:
-    """Retorna a key do widget com o sufixo de geracao atual."""
     return f"{key}_{_FORM_GEN}"
 
 
-def _load_cfg() -> dict:
+def _load_cfg(form_folder: Path) -> dict:
     try:
-        with open(_CFG_PATH, "rb") as f:
+        with open(form_folder / "config.toml", "rb") as f:
             return tomllib.load(f)
     except FileNotFoundError:
         return {}
 
 
-def get_fixed_fields() -> dict:
+def get_fixed_fields(form_folder: Path) -> dict:
     """
-    Campos ocultos — nao aparecem no formulario.
-    Injetados automaticamente em app.py antes de chamar fill_pdf().
+    Retorna campos ocultos: [fixed] com valores fixos + [hidden] como vazios.
+    data_notificacao é sempre hoje (dinâmico).
     """
-    cfg = _load_cfg()
-    fixed: dict = dict(cfg.get("fixed", {}))
+    cfg = _load_cfg(form_folder)
 
-    # Data de notificacao = hoje (dinamico)
+    fixed: dict = dict(cfg.get("fixed", {}))
     fixed["data_notificacao"] = date.today()
 
-    # Campos em branco (ignorados pelo pdf_filler)
-    _blank = [
-        "numero_notificacao",
-        "data_diagnostico",           # preenchido em app.py com data do lab
-        "idade_valor", "idade_unidade",
-        "ibge_municipio_resid", "distrito", "codigo_logradouro", "pais_exterior",
-        "geo_campo1", "geo_campo2", "ponto_referencia", "zona",
-        "ibge_municipio_transfusao", "codigo_instituicao",
-        "criterio_obito",
-        "uf_tratamento", "municipio_tratamento", "ibge_municipio_tratamento",
-        "unidade_tratamento", "codigo_unidade_tratamento",
-        "evolucao_caso", "data_obito",
-        "investigador_nome", "investigador_funcao",
-    ]
-    for f in _blank:
-        fixed.setdefault(f, "")
+    for field in cfg.get("hidden", {}).get("campos", []):
+        fixed.setdefault(field, "")
 
     return fixed
 
@@ -68,7 +49,6 @@ def get_fixed_fields() -> dict:
 # ---------------------------------------------------------------------------
 
 def _date_input(label: str, key: str) -> date | None:
-    """Campo de texto para data. Aceita dd/mm/yyyy ou ddmmyyyy."""
     raw = st.text_input(label, placeholder="dd/mm/aaaa", key=_k(key))
     if not raw:
         return None
@@ -77,12 +57,11 @@ def _date_input(label: str, key: str) -> date | None:
             return datetime.strptime(raw.strip(), fmt).date()
         except ValueError:
             continue
-    st.error(f"Data invalida: use dd/mm/aaaa ou ddmmaaaa")
+    st.error("Data inválida: use dd/mm/aaaa ou ddmmaaaa")
     return None
 
 
 def _radio3(label: str, key: str, index: int = 1) -> str:
-    """Radio Sim/Nao/Ignorado retornando '1', '2' ou '9'."""
     opts = {"Sim (1)": "1", "Nao (2)": "2", "Ignorado (9)": "9"}
     choice = st.radio(label, list(opts.keys()), index=index,
                       horizontal=True, key=_k(key))
@@ -90,7 +69,6 @@ def _radio3(label: str, key: str, index: int = 1) -> str:
 
 
 def _radio_rapido(label: str, key: str) -> str:
-    """Radio Positivo/Negativo/Inconclusivo sem selecao padrao."""
     opts = {"1 - Positivo": "1", "2 - Negativo": "2", "3 - Inconclusivo": "3"}
     choice = st.radio(label, list(opts.keys()), index=None,
                       horizontal=True, key=_k(key))
@@ -98,20 +76,21 @@ def _radio_rapido(label: str, key: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Formulario principal
+# Formulário principal
 # ---------------------------------------------------------------------------
 
-def render_all_fields(gen: int = 0) -> dict:
-    """Renderiza os campos visiveis e retorna o dicionario de dados."""
+def render_all_fields(gen: int = 0, form_folder: Path | None = None) -> dict:
+    """Renderiza os campos visíveis e retorna o dicionário de dados."""
     global _FORM_GEN
     _FORM_GEN = gen
 
-    d = _load_cfg().get("defaults", {})
+    if form_folder is None:
+        form_folder = Path(__file__).parent / "fichas_sinan" / "Aids_adulto_v5"
+
+    d = _load_cfg(form_folder).get("defaults", {})
     data: dict = {}
 
-    # numero_notificacao e data_notificacao: OCULTOS
-
-    st.subheader("Unidade de Saude")
+    st.subheader("Unidade de Saúde")
     c1, c2 = st.columns([4, 2])
     with c1:
         data["unidade_saude"] = st.text_input(
@@ -128,12 +107,11 @@ def render_all_fields(gen: int = 0) -> dict:
     st.divider()
     st.subheader("Paciente")
 
-    # Nome + Nascimento + Sexo na mesma linha
     c1, c2, c3 = st.columns([5, 1.4, 1])
     with c1:
         data["nome_paciente"] = st.text_input(
             "Nome Completo",
-            placeholder="NOME COMPLETO EM MAIUSCULO",
+            placeholder="NOME COMPLETO EM MAIÚSCULO",
             key=_k("nome_paciente"))
     with c2:
         data["data_nascimento"] = _date_input("Nascimento", "dt_nasc")
@@ -141,7 +119,6 @@ def render_all_fields(gen: int = 0) -> dict:
         sexo_opts = ["M - Masculino", "F - Feminino", "I - Ignorado"]
         data["sexo"] = st.selectbox("Sexo", sexo_opts, index=0, key=_k("sexo"))[0]
 
-    # Gestante + Raca + Escolaridade
     c1, c2, c3 = st.columns([1.8, 1.5, 2])
     with c1:
         gestante_opts = [
@@ -154,7 +131,7 @@ def render_all_fields(gen: int = 0) -> dict:
             "1 - Branca", "2 - Preta", "3 - Amarela",
             "4 - Parda", "5 - Indigena", "9 - Ignorado"]
         data["raca_cor"] = st.selectbox(
-            "Raca/Cor", raca_opts, index=3, key=_k("raca_cor"))[0]
+            "Raça/Cor", raca_opts, index=3, key=_k("raca_cor"))[0]
     with c3:
         esc_opts = [
             "0 - Analfabeto",
@@ -171,21 +148,17 @@ def render_all_fields(gen: int = 0) -> dict:
         data["escolaridade"] = st.selectbox(
             "Escolaridade", esc_opts, index=9, key=_k("escolaridade"))[0:2].strip()
 
-    # idade_valor e idade_unidade: OCULTOS e em branco
-
-    # Cartao SUS + Nome da Mae
     c1, c2 = st.columns([1.2, 2.8])
     with c1:
         data["cartao_sus"] = st.text_input(
-            "Cartao SUS", max_chars=15, placeholder="15 digitos",
+            "Cartão SUS", max_chars=15, placeholder="15 dígitos",
             key=_k("cartao_sus"))
     with c2:
-        data["nome_mae"] = st.text_input("Nome da Mae", key=_k("nome_mae"))
+        data["nome_mae"] = st.text_input("Nome da Mãe", key=_k("nome_mae"))
 
     st.divider()
-    st.subheader("Residencia")
+    st.subheader("Residência")
 
-    # UF (estreito) + Municipio + Bairro na mesma linha
     c1, c2, c3 = st.columns([0.5, 2.5, 2])
     with c1:
         data["uf_residencia"] = st.text_input(
@@ -193,12 +166,11 @@ def render_all_fields(gen: int = 0) -> dict:
             key=_k("uf_res"))
     with c2:
         data["municipio_residencia"] = st.text_input(
-            "Municipio", value=d.get("municipio_residencia", ""),
+            "Município", value=d.get("municipio_residencia", ""),
             key=_k("municipio_res"))
     with c3:
         data["bairro"] = st.text_input("Bairro", key=_k("bairro"))
 
-    # Logradouro + Numero (estreito) + Complemento
     c1, c2, c3 = st.columns([4, 0.8, 2])
     with c1:
         data["logradouro"] = st.text_input("Logradouro", key=_k("logradouro"))
@@ -207,8 +179,7 @@ def render_all_fields(gen: int = 0) -> dict:
     with c3:
         data["complemento"] = st.text_input("Complemento", key=_k("complemento"))
 
-    # CEP + Telefone (estreitos, resto vazio)
-    c1, c2, c3 = st.columns([1.2, 1.5, 3.3])
+    c1, c2, _ = st.columns([1.2, 1.5, 3.3])
     with c1:
         data["cep"] = st.text_input(
             "CEP", max_chars=9, placeholder="XXXXX-XXX", key=_k("cep"))
@@ -218,10 +189,10 @@ def render_all_fields(gen: int = 0) -> dict:
     st.divider()
     st.subheader("Complementar")
     data["ocupacao"] = st.text_input(
-        "Ocupacao / Ramo de Atividade", key=_k("ocupacao"))
+        "Ocupação / Ramo de Atividade", key=_k("ocupacao"))
 
     st.divider()
-    st.subheader("Transmissao")
+    st.subheader("Transmissão")
     c1, c2 = st.columns(2)
     with c1:
         st.markdown("**Vertical**")
@@ -246,20 +217,19 @@ def render_all_fields(gen: int = 0) -> dict:
                       label_visibility="collapsed")
         data["transmissao_sexual"] = sx_opts[sx]
 
-    st.markdown("**Sanguinea**")
+    st.markdown("**Sanguínea**")
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        data["sanguinea_drogas"] = _radio3("Drogas injetaveis", "drg")
+        data["sanguinea_drogas"] = _radio3("Drogas injetáveis", "drg")
     with c2:
-        data["sanguinea_hemofilia"] = _radio3("Hemotransfusao / hemofilia", "hmf")
+        data["sanguinea_hemofilia"] = _radio3("Hemotransfusão / hemofilia", "hmf")
     with c3:
-        data["sanguinea_transfusao"] = _radio3("Transfusao sanguinea", "tfs")
+        data["sanguinea_transfusao"] = _radio3("Transfusão sanguínea", "tfs")
     with c4:
-        data["sanguinea_acidente"] = _radio3("Acidente c/ material biologico", "acm")
+        data["sanguinea_acidente"] = _radio3("Acidente c/ material biológico", "acm")
 
-    # Campos 35-39 condicionais (transfusao ou acidente = Sim)
     if data.get("sanguinea_transfusao") == "1" or data.get("sanguinea_acidente") == "1":
-        st.markdown("**Transfusao / Acidente**")
+        st.markdown("**Transfusão / Acidente**")
         c1, c2, c3 = st.columns([1, 1, 3])
         with c1:
             data["data_transfusao_acidente"] = _date_input("Data", "dt_tfs")
@@ -268,19 +238,18 @@ def render_all_fields(gen: int = 0) -> dict:
                 "UF", max_chars=2, key=_k("uf_tfs"))
         with c3:
             data["municipio_transfusao"] = st.text_input(
-                "Municipio", key=_k("mun_tfs"))
+                "Município", key=_k("mun_tfs"))
 
         data["instituicao_transfusao"] = st.text_input(
-            "Instituicao", key=_k("instituicao_tfs"))
+            "Instituição", key=_k("instituicao_tfs"))
 
         causa_opts = ["", "1 - Sim", "2 - Nao", "3 - Nao se aplica"]
         causa_sel = st.selectbox(
-            "A transfusao/acidente foi causa da infeccao pelo HIV?",
+            "A transfusão/acidente foi causa da infecção pelo HIV?",
             causa_opts, key=_k("causa"))
         data["transfusao_foi_causa"] = causa_sel[0] if causa_sel else ""
 
     st.divider()
-    # Laboratorio — sem titulo, separadores entre secoes
     st.markdown("**Triagem com IE 3ª/4ª G**")
     c1, c2 = st.columns(2)
     with c1:
@@ -292,11 +261,11 @@ def render_all_fields(gen: int = 0) -> dict:
     st.markdown("**Triagem com Testes Rápidos**")
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        data["lab_rapido1_resultado"] = _radio_rapido("Rapido 1", "rp1")
+        data["lab_rapido1_resultado"] = _radio_rapido("Rápido 1", "rp1")
     with c2:
-        data["lab_rapido2_resultado"] = _radio_rapido("Rapido 2", "rp2")
+        data["lab_rapido2_resultado"] = _radio_rapido("Rápido 2", "rp2")
     with c3:
-        data["lab_rapido3_resultado"] = _radio_rapido("Rapido 3", "rp3")
+        data["lab_rapido3_resultado"] = _radio_rapido("Rápido 3", "rp3")
     with c4:
         data["lab_rapidos_data"] = _date_input("Data da coleta", "dt_rp")
 
@@ -312,7 +281,7 @@ def render_all_fields(gen: int = 0) -> dict:
     def _res(sel: str) -> str:
         return sel[0] if sel else ""
 
-    st.markdown("**Confirmatorio**")
+    st.markdown("**Confirmatório**")
     c1, c2 = st.columns(2)
     with c1:
         data["lab_confirmatorio_resultado"] = _res(st.selectbox(
@@ -321,26 +290,26 @@ def render_all_fields(gen: int = 0) -> dict:
         data["lab_confirmatorio_data"] = _date_input("Data da coleta", "dt_tr2")
 
     st.divider()
-    st.subheader("Criterio Rio de Janeiro/Caracas")
+    st.subheader("Critério Rio de Janeiro/Caracas")
     itens_rj_esq = [
         ("rj_sarcoma_kaposi",  "Sarcoma de Kaposi (10 pts)"),
-        ("rj_tb_disseminada",  "Tuberculose disseminada/extra-pulmonar/nao cavitaria (10)"),
+        ("rj_tb_disseminada",  "Tuberculose disseminada/extra-pulmonar/não cavitária (10)"),
         ("rj_candidose_oral",  "Candidose oral ou leucoplasia pilosa (5)"),
-        ("rj_tb_pulmonar",     "Tuberculose pulmonar cavitaria ou nao especificada (5)"),
-        ("rj_herpes_zoster",   "Herpes zoster em individuo <= 60 anos (5)"),
-        ("rj_disfuncao_snc",   "Disfuncao do sistema nervoso central (5)"),
-        ("rj_diarreia",        "Diarreia >= 1 mes (2)"),
-        ("rj_febre",           "Febre >= 38oC por >= 1 mes (2)*"),
+        ("rj_tb_pulmonar",     "Tuberculose pulmonar cavitária ou não especificada (5)"),
+        ("rj_herpes_zoster",   "Herpes zoster em indivíduo <= 60 anos (5)"),
+        ("rj_disfuncao_snc",   "Disfunção do sistema nervoso central (5)"),
+        ("rj_diarreia",        "Diarreia >= 1 mês (2)"),
+        ("rj_febre",           "Febre >= 38oC por >= 1 mês (2)*"),
     ]
     itens_rj_dir = [
         ("rj_caquexia",       "Caquexia ou perda de peso > 10% (2)*"),
-        ("rj_astenia",        "Astenia >= 1 mes (2)*"),
+        ("rj_astenia",        "Astenia >= 1 mês (2)*"),
         ("rj_dermatite",      "Dermatite persistente (2)"),
         ("rj_anemia",         "Anemia e/ou linfopenia e/ou trombocitopenia (2)"),
         ("rj_tosse",          "Tosse persistente ou qualquer pneumonia (2)*"),
-        ("rj_linfadenopatia", "Linfadenopatia >= 1cm, >= 2 sitios extra-inguinais >= 1 mes (2)"),
+        ("rj_linfadenopatia", "Linfadenopatia >= 1cm, >= 2 sítios extra-inguinais >= 1 mês (2)"),
     ]
-    st.caption("*Excluida a tuberculose como causa")
+    st.caption("*Excluída a tuberculose como causa")
     c1, c2 = st.columns(2)
     with c1:
         for key, label in itens_rj_esq:
@@ -350,26 +319,26 @@ def render_all_fields(gen: int = 0) -> dict:
             data[key] = _radio3(label, key)
 
     st.divider()
-    st.subheader("Criterio CDC")
+    st.subheader("Critério CDC")
     itens_cdc_esq = [
-        ("cdc_cancer_cervical",    "Cancer cervical invasivo"),
-        ("cdc_candidose_esofago",  "Candidose de esofago"),
-        ("cdc_candidose_traqueia", "Candidose de traqueia, bronquios ou pulmao"),
-        ("cdc_citomegalovirose",   "Citomegalovirose (exceto figado, baco ou linfonodos)"),
+        ("cdc_cancer_cervical",    "Câncer cervical invasivo"),
+        ("cdc_candidose_esofago",  "Candidose de esôfago"),
+        ("cdc_candidose_traqueia", "Candidose de traqueia, brônquios ou pulmão"),
+        ("cdc_citomegalovirose",   "Citomegalovirose (exceto fígado, baço ou linfonodos)"),
         ("cdc_criptococose",       "Criptococose extrapulmonar"),
-        ("cdc_criptosporidiose",   "Criptosporidiose intestinal cronica > 1 mes"),
-        ("cdc_herpes_simples",     "Herpes simples mucocutaneo > 1 mes"),
+        ("cdc_criptosporidiose",   "Criptosporidiose intestinal crônica > 1 mês"),
+        ("cdc_herpes_simples",     "Herpes simples mucocutâneo > 1 mês"),
         ("cdc_histoplasmose",      "Histoplasmose disseminada"),
-        ("cdc_isosporidiose",      "Isosporidiose intestinal cronica > 1 mes"),
+        ("cdc_isosporidiose",      "Isosporidiose intestinal crônica > 1 mês"),
     ]
     itens_cdc_dir = [
         ("cdc_leucoencefalopatia", "Leucoencefalopatia multifocal progressiva"),
-        ("cdc_linfoma_hodgkin",    "Linfoma nao Hodgkin e outros linfomas"),
-        ("cdc_linfoma_cerebro",    "Linfoma primario do cerebro"),
-        ("cdc_micobacteriose",     "Micobacteriose disseminada (exceto TB e hanseniase)"),
+        ("cdc_linfoma_hodgkin",    "Linfoma não Hodgkin e outros linfomas"),
+        ("cdc_linfoma_cerebro",    "Linfoma primário do cérebro"),
+        ("cdc_micobacteriose",     "Micobacteriose disseminada (exceto TB e hanseníase)"),
         ("cdc_pneumonia_pcp",      "Pneumonia por Pneumocystis carinii"),
-        ("cdc_reativacao_chagas",  "Reativacao de doenca de Chagas (meningoencefalite/miocardite)"),
-        ("cdc_salmonelose",        "Salmonelose (sepse recorrente nao-tifoide)"),
+        ("cdc_reativacao_chagas",  "Reativação de doença de Chagas (meningoencefalite/miocardite)"),
+        ("cdc_salmonelose",        "Salmonelose (sepse recorrente não-tifóide)"),
         ("cdc_toxoplasmose",       "Toxoplasmose cerebral"),
     ]
     c1, c2 = st.columns(2)
@@ -379,11 +348,8 @@ def render_all_fields(gen: int = 0) -> dict:
     with c2:
         for key, label in itens_cdc_dir:
             data[key] = _radio3(label, key)
-        # cdc_cd4_350: padrao 9 (Ignorado)
         data["cdc_cd4_350"] = _radio3(
-            "Contagem de linfocitos T CD4+ menor que 350 cel/mm3",
+            "Contagem de linfócitos T CD4+ menor que 350 cel/mm3",
             "cdc_cd4_350", index=2)
-
-    # Campos 43-48 e Investigador: OCULTOS — injetados por get_fixed_fields()
 
     return data

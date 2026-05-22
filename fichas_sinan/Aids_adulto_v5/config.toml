@@ -1,0 +1,52 @@
+[form]
+name = "AIDS Adulto"
+description = "Ficha de Notificação/Investigação Individual — AIDS em maiores de 13 anos (v5)"
+pdf = "Aids_adulto_v5.pdf"
+
+[defaults]
+# Campos editáveis pré-preenchidos no formulário
+unidade_saude      = "CTA Marymar Novaes"
+codigo_unidade_saude = "0072"
+uf_residencia      = "BA"
+municipio_residencia = "SALVADOR"
+
+[fixed]
+# Campos ocultos injetados automaticamente no PDF
+uf_notificacao         = "BA"
+municipio_notificacao  = "Salvador"
+ibge_municipio_notif   = "292740"
+
+[hidden]
+# Campos injetados como vazios (não aparecem no formulário, ignorados pelo pdf_filler)
+campos = [
+  "numero_notificacao",
+  "data_diagnostico",
+  "idade_valor",
+  "idade_unidade",
+  "ibge_municipio_resid",
+  "distrito",
+  "codigo_logradouro",
+  "pais_exterior",
+  "geo_campo1",
+  "geo_campo2",
+  "ponto_referencia",
+  "zona",
+  "ibge_municipio_transfusao",
+  "codigo_instituicao",
+  "criterio_obito",
+  "uf_tratamento",
+  "municipio_tratamento",
+  "ibge_municipio_tratamento",
+  "unidade_tratamento",
+  "codigo_unidade_tratamento",
+  "evolucao_caso",
+  "data_obito",
+  "investigador_nome",
+  "investigador_funcao",
+]
+
+[app]
+font_size        = 13
+font_size_date   = 13
+font_size_number = 13
+font_name        = "helv"

@@ -1,32 +1,23 @@
 """
-Motor de preenchimento do PDF SINAN via sobreposicao de texto (PyMuPDF).
+Motor de preenchimento de PDF SINAN via sobreposição de texto (PyMuPDF).
 
-O arquivo original nunca e modificado — esta funcao retorna bytes do novo PDF.
+Totalmente genérico: lê field_coords.json e config.toml da pasta da ficha.
+O PDF original nunca é modificado — retorna bytes do novo PDF.
 """
 
 from __future__ import annotations
 
+import json
 import tomllib
 from datetime import date
 from pathlib import Path
 
 import fitz  # PyMuPDF
 
-from field_coords import ALL_FIELDS
+_FICHAS_DIR = Path(__file__).parent / "fichas_sinan"
 
-_CFG_PATH = Path(__file__).parent / "config.toml"
-_PDF_PATH = Path(__file__).parent / "fichas_sinan" / "Aids_adulto_v5" / "Aids_adulto_v5.pdf"
-
-
-def _load_app_config() -> dict:
-    with open(_CFG_PATH, "rb") as f:
-        return tomllib.load(f).get("app", {})
-
-
-# Fragmentos de nome de campo que requerem fundo branco sob o texto
 _WHITE_BG_KEYWORDS = ("codigo", "ibge", "cep", "telefone", "cartao")
 
-# Campos que devem ser convertidos para maiusculas antes de inserir no PDF
 _UPPERCASE_FIELDS = {
     "nome_paciente", "nome_mae",
     "uf_residencia", "municipio_residencia",
@@ -34,58 +25,83 @@ _UPPERCASE_FIELDS = {
 }
 
 
+def _load_coords(form_folder: Path) -> dict[str, tuple[int, float, float]]:
+    with open(form_folder / "field_coords.json", encoding="utf-8") as f:
+        raw = json.load(f)
+    return {k: (v["page"], v["x"], v["y"]) for k, v in raw.items()}
+
+
+def _load_app_cfg(form_folder: Path) -> dict:
+    cfg_path = form_folder / "config.toml"
+    if not cfg_path.exists():
+        return {}
+    with open(cfg_path, "rb") as f:
+        return tomllib.load(f).get("app", {})
+
+
+def _find_pdf(form_folder: Path) -> Path:
+    cfg_path = form_folder / "config.toml"
+    if cfg_path.exists():
+        with open(cfg_path, "rb") as f:
+            pdf_name = tomllib.load(f).get("form", {}).get("pdf")
+        if pdf_name:
+            return form_folder / pdf_name
+    # fallback: primeiro PDF que não seja output
+    candidates = [
+        p for p in form_folder.glob("*.pdf")
+        if "output" not in p.stem.lower()
+    ]
+    if not candidates:
+        raise FileNotFoundError(f"Nenhum PDF encontrado em {form_folder}")
+    return sorted(candidates)[0]
+
+
 def _needs_white_bg(field_name: str, raw_value) -> bool:
-    """Retorna True se o campo deve ter fundo branco antes do texto."""
     if isinstance(raw_value, date):
         return True
-    name = field_name.lower()
-    return any(kw in name for kw in _WHITE_BG_KEYWORDS)
+    return any(kw in field_name.lower() for kw in _WHITE_BG_KEYWORDS)
 
 
 def _draw_white_bg(page, x: float, y: float, text: str,
                    fontname: str, fontsize: float) -> None:
-    """Desenha retangulo branco cobrindo a area do texto a ser inserido."""
     text_w = fitz.get_text_length(text, fontname=fontname, fontsize=fontsize)
     pad_x, pad_top, pad_bot = 1.0, fontsize * 0.85, fontsize * 0.15
     rect = fitz.Rect(x - pad_x, y - pad_top, x + text_w + pad_x, y + pad_bot)
     page.draw_rect(rect, color=(1, 1, 1), fill=(1, 1, 1), width=0)
 
 
-def fill_pdf(form_data: dict) -> bytes:
+def fill_pdf(form_data: dict, form_folder: Path) -> bytes:
     """
-    Preenche o PDF com os dados do formulario e retorna os bytes do arquivo gerado.
+    Preenche o PDF da ficha com os dados e retorna bytes do arquivo gerado.
 
     Args:
-        form_data: dicionario {nome_campo: valor} com os dados a inserir.
-                   Valores None, False e strings vazias sao ignorados.
-
-    Returns:
-        bytes do PDF preenchido, prontos para st.download_button.
+        form_data: {nome_campo: valor} — None, False e string vazia são ignorados.
+        form_folder: pasta da ficha em fichas_sinan/ (ex: fichas_sinan/Aids_adulto_v5).
     """
-    cfg = _load_app_config()
-    font_name = cfg.get("font_name", "helv")
-    font_size = float(cfg.get("font_size", 7))
-    font_size_date = float(cfg.get("font_size_date", font_size))
+    cfg = _load_app_cfg(form_folder)
+    font_name     = cfg.get("font_name", "helv")
+    font_size     = float(cfg.get("font_size", 7))
+    font_size_date   = float(cfg.get("font_size_date", font_size))
     font_size_number = float(cfg.get("font_size_number", round(font_size * 0.8, 1)))
     black = (0.0, 0.0, 0.0)
 
-    doc = fitz.open(str(_PDF_PATH))
+    coords  = _load_coords(form_folder)
+    pdf_path = _find_pdf(form_folder)
+    doc = fitz.open(str(pdf_path))
 
     for field_name, raw_value in form_data.items():
-        # Ignorar campos vazios / nulos / False
         if raw_value is None or raw_value == "" or raw_value is False:
             continue
         if isinstance(raw_value, bool) and not raw_value:
             continue
 
-        coords = ALL_FIELDS.get(field_name)
-        if coords is None:
-            continue  # campo nao mapeado
+        coord = coords.get(field_name)
+        if coord is None:
+            continue
 
-        page_num, x, y = coords
-        page = doc[page_num - 1]  # PyMuPDF: paginas 0-indexadas
+        page_num, x, y = coord
+        page = doc[page_num - 1]
 
-        # Formatar valor
         if isinstance(raw_value, date):
             value = raw_value.strftime("%d/%m/%Y")
             fs = font_size_date
@@ -118,9 +134,8 @@ def fill_pdf(form_data: dict) -> bytes:
 if __name__ == "__main__":
     from paciente_teste import DADOS_TESTE
 
-    out = fill_pdf(DADOS_TESTE)
-    _out = Path(__file__).parent / "fichas_sinan" / "Aids_adulto_v5" / "teste_output.pdf"
-    _out.write_bytes(out)
-    print(f"Arquivo gerado: {_out}")
-    print("Abra e verifique o alinhamento dos campos.")
-    print("Se necessario, ajuste as coordenadas em field_coords.py")
+    folder = _FICHAS_DIR / "Aids_adulto_v5"
+    out = fill_pdf(DADOS_TESTE, folder)
+    out_path = folder / "teste_output.pdf"
+    out_path.write_bytes(out)
+    print(f"Gerado: {out_path}")

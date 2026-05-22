@@ -17,6 +17,16 @@ paciente_teste.py
 paciente_teste2.py
 setup.bat
 
+# Configuracao local Claude Code
+.claude/settings.local.json
+
+# Playwright MCP (local)
+.playwright-mcp/
+
+# Logs do Streamlit
+streamlit_err.log
+streamlit_out.log
+
 # PDFs de referencia (nao necessarios no deploy)
 fichas_sinan/Aids_adulto_v5/Aids_adulto_v5_instr.pdf
 fichas_sinan/Aids_adulto_v5/dicionario_de_dados.pdf
