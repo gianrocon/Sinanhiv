@@ -228,12 +228,13 @@ def render_generic(gen: int = 0, form_folder: Path | None = None) -> dict:
     cfg        = _load_cfg(form_folder)
     coords_raw = _load_coords_raw(form_folder)
 
-    defaults    = cfg.get("defaults", {})
-    fixed_keys  = set(cfg.get("fixed", {}).keys())
-    hidden_keys = set(cfg.get("hidden", {}).get("campos", []))
-    fields_cfg  = cfg.get("fields", {})
-    sni_fields  = set(cfg.get("form", {}).get("sni_fields", []))
-    skip_keys   = fixed_keys | hidden_keys
+    defaults      = cfg.get("defaults", {})
+    fixed_keys    = set(cfg.get("fixed", {}).keys())
+    hidden_keys   = set(cfg.get("hidden", {}).get("campos", []))
+    fields_cfg    = cfg.get("fields", {})
+    sni_fields    = set(cfg.get("form", {}).get("sni_fields", []))
+    divider_after = set(cfg.get("dividers", {}).get("apos", []))
+    skip_keys     = fixed_keys | hidden_keys
     if "data_notificacao" in coords_raw:
         skip_keys.add("data_notificacao")
 
@@ -292,5 +293,10 @@ def render_generic(gen: int = 0, form_folder: Path | None = None) -> dict:
                     with col:
                         data[field] = _widget_for(field, label, default,
                                                    fields_cfg.get(field, {}), sni_fields)
+
+            # Divisor após a linha se algum campo da linha estiver em divider_after
+            row_fields = {f for (_, f, _), _ in row_items}
+            if divider_after & row_fields:
+                st.divider()
 
     return data

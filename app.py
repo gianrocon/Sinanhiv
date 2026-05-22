@@ -36,23 +36,55 @@ div[data-testid="stRadio"] > label { font-size: 0.85rem; }
 div[data-testid="stRadio"] { margin-bottom: 0rem; }
 div[data-testid="stTextInput"] { margin-bottom: 0rem; }
 div[data-testid="stSelectbox"] { margin-bottom: 0rem; }
+/* Bordas visíveis — modo claro */
 div[data-testid="stTextInput"] input,
 div[data-testid="stSelectbox"] > div > div {
-    border: 1.5px solid rgba(150, 150, 150, 0.7) !important;
+    border: 2px solid #555 !important;
+    border-radius: 4px !important;
 }
-div[data-testid="stRadio"] label > div:first-child {
-    border: 2px solid #777 !important;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.25) !important;
+div[data-testid="stTextInput"] input:focus {
+    border-color: #1565c0 !important;
+    box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.2) !important;
 }
+/* Bordas visíveis — modo escuro */
 @media (prefers-color-scheme: dark) {
-    div[data-testid="stRadio"] label > div:first-child {
-        border: 2px solid #bbb !important;
-        box-shadow: 0 0 0 1px rgba(255,255,255,0.2) !important;
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stSelectbox"] > div > div {
+        border: 2px solid #aaa !important;
     }
 }
-[data-theme="dark"] div[data-testid="stRadio"] label > div:first-child {
-    border: 2px solid #bbb !important;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.2) !important;
+[data-theme="dark"] div[data-testid="stTextInput"] input,
+[data-theme="dark"] div[data-testid="stSelectbox"] > div > div {
+    border: 2px solid #aaa !important;
+}
+/* Rádios — substitui completamente o visual do Streamlit */
+label[data-baseweb="radio"] > div:first-child {
+    border: 3px solid #222 !important;
+    background-color: #fff !important;
+    box-shadow: none !important;
+}
+label[data-baseweb="radio"] > div:first-child > div {
+    display: none !important;
+}
+label[data-baseweb="radio"]:has(input:checked) > div:first-child {
+    box-shadow: inset 0 0 0 4px #1565c0 !important;
+}
+/* Rádios — modo escuro */
+@media (prefers-color-scheme: dark) {
+    label[data-baseweb="radio"] > div:first-child {
+        border: 3px solid #ccc !important;
+        background-color: #1e1e2e !important;
+    }
+    label[data-baseweb="radio"]:has(input:checked) > div:first-child {
+        box-shadow: inset 0 0 0 4px #4d96ff !important;
+    }
+}
+[data-theme="dark"] label[data-baseweb="radio"] > div:first-child {
+    border: 3px solid #ccc !important;
+    background-color: #1e1e2e !important;
+}
+[data-theme="dark"] label[data-baseweb="radio"]:has(input:checked) > div:first-child {
+    box-shadow: inset 0 0 0 4px #4d96ff !important;
 }
 div[data-testid="stDownloadButton"] button {
     background-color: #28a745 !important;

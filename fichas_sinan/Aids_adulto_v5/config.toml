@@ -15,6 +15,16 @@ sni_fields = [
   "cdc_salmonelose", "cdc_toxoplasmose",
 ]
 
+[dividers]
+# Campo após o qual inserir st.divider() (pelo menos um campo da linha deve constar aqui)
+apos = [
+  "transmissao_vertical",     # após transmissão sexual/vertical → antes de transfusão
+  "transfusao_foi_causa",     # após seção transfusão → antes de testes rápidos
+  "lab_rapidos_data",         # após testes rápidos → antes de triagem
+  "lab_triagem_data",         # após triagem → antes de confirmatório
+  "rj_febre",                 # página 2: após critérios RJ/Caracas → antes de CDC
+]
+
 [defaults]
 # Campos editáveis pré-preenchidos no formulário
 unidade_saude      = "CTA Marymar Novaes"
@@ -174,3 +184,4 @@ options       = ["Sim (1)", "Não (2)", "Ignorado (9)"]
 values        = ["1", "2", "9"]
 default_index = 2
 horizontal    = true
+col_span      = 2
