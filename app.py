@@ -18,6 +18,7 @@ import streamlit.components.v1 as _components
 from form_renderer import render_generic, get_fixed_fields
 from pdf_filler import fill_pdf
 from clipboard_import import parse_clipboard
+from siclom_filler import fill_siclom
 
 _FICHAS_DIR = Path(__file__).parent / "fichas_sinan"
 
@@ -297,11 +298,24 @@ def _show_form(form_folder: Path) -> None:
         _pdf_error = e
 
     siblings = _SIBLING_LINKS.get(form_folder.name, [])
-    # Layout: Baixar PDF | Nova Notificação | ← Voltar | [irmãs...]
-    n_extra = 1 + len(siblings)  # Voltar + irmãs
-    bottom_cols = st.columns([2, 2] + [1] * n_extra)
+    has_siclom = form_folder.name == "Aids_adulto_v5"
 
-    with bottom_cols[0]:
+    # Gerar SICLOM (só ficha AIDS)
+    _siclom_bytes = None
+    _siclom_error = None
+    if has_siclom:
+        try:
+            _siclom_bytes = fill_siclom(form_data)
+        except Exception as e:
+            _siclom_error = e
+
+    # Layout: Baixar PDF | [SICLOM] | Nova Notificação | ← Voltar | [irmãs...]
+    n_extra = 1 + len(siblings)  # Voltar + irmãs
+    siclom_col = [1] if has_siclom else []
+    bottom_cols = st.columns([2] + siclom_col + [2] + [1] * n_extra)
+    col_idx = 0
+
+    with bottom_cols[col_idx]:
         if _pdf_bytes is not None:
             st.download_button(
                 label="Baixar PDF",
@@ -312,26 +326,44 @@ def _show_form(form_folder: Path) -> None:
             )
         else:
             st.error(f"Erro ao preparar PDF: {_pdf_error}")
+    col_idx += 1
 
-    with bottom_cols[1]:
+    if has_siclom:
+        with bottom_cols[col_idx]:
+            if _siclom_bytes is not None:
+                st.download_button(
+                    label="Gerar SICLOM",
+                    data=_siclom_bytes,
+                    file_name="siclom_adulto.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key=f"siclom_{form_folder.name}",
+                )
+            else:
+                st.error(f"SICLOM: {_siclom_error}")
+        col_idx += 1
+
+    with bottom_cols[col_idx]:
         if st.button("Nova Notificação", use_container_width=True):
             st.session_state[gen_key] = st.session_state.get(gen_key, 0) + 1
             st.session_state.pop(prefill_key, None)
             st.session_state.pop(f"form_came_from_{form_folder.name}", None)
             st.rerun()
+    col_idx += 1
 
-    with bottom_cols[2]:
+    with bottom_cols[col_idx]:
         if st.button("← Voltar", use_container_width=True, key=f"voltar_bottom_{form_folder.name}"):
             st.session_state.current_form = None
             st.session_state.pop(f"autofocused_{form_folder.name}", None)
             st.session_state.pop(f"form_came_from_{form_folder.name}", None)
             st.rerun()
+    col_idx += 1
 
     for i, (sib_label, dest_name) in enumerate(siblings):
         dest_folder = _FICHAS_DIR / dest_name
         if not dest_folder.exists():
             continue
-        with bottom_cols[3 + i]:
+        with bottom_cols[col_idx + i]:
             if st.button(f"{sib_label} →", use_container_width=True,
                          key=f"nav_{dest_name}_{form_folder.name}"):
                 common = _collect_common(form_data)
