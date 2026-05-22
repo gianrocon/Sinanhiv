@@ -79,10 +79,10 @@ def fill_pdf(form_data: dict, form_folder: Path) -> bytes:
         form_folder: pasta da ficha em fichas_sinan/ (ex: fichas_sinan/Aids_adulto_v5).
     """
     cfg = _load_app_cfg(form_folder)
-    font_name     = cfg.get("font_name", "helv")
-    font_size     = float(cfg.get("font_size", 7))
-    font_size_date   = float(cfg.get("font_size_date", font_size))
-    font_size_number = float(cfg.get("font_size_number", round(font_size * 0.8, 1)))
+    font_name        = cfg.get("font_name", "helv")
+    font_size        = float(cfg.get("font_size", 13))
+    font_size_date   = float(cfg.get("font_size_date", 13))
+    font_size_number = float(cfg.get("font_size_number", 13))
     black = (0.0, 0.0, 0.0)
 
     coords  = _load_coords(form_folder)

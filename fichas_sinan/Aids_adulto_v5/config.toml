@@ -57,12 +57,6 @@ campos = [
   "investigador_funcao",
 ]
 
-[app]
-font_size        = 13
-font_size_date   = 13
-font_size_number = 13
-font_name        = "helv"
-
 # ── Widgets customizados por campo ──────────────────────────────────────────
 
 [fields.sexo]
