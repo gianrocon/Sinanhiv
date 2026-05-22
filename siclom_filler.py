@@ -24,6 +24,8 @@ _RADIOS_PAGINA_1 = [
     (302.7, 58.8, 2.5),
     # Item 3 — Origem: Público
     (227.2, 75.2, 2.5),
+    # Item 9 — Início de tratamento: Sim
+    (54.3, 188.4, 3.0),
     # Item 19 — Esquema preferencial: Tenofovir/Lamivudina "2 em 1" + Dolutegravir
     (248.0, 388.3, 3.5),
 ]
