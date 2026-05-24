@@ -1,0 +1,387 @@
+[
+  {
+    "nome": "1Instituição solicitante carimbo padrão",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 20.947,
+      "y1": 768.329,
+      "x2": 422.965,
+      "y2": 783.417
+    },
+    "max_caracteres": 100
+  },
+  {
+    "nome": "2 CNES",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 478.884,
+      "y1": 771.549,
+      "x2": 576.445,
+      "y2": 787.029
+    },
+    "max_caracteres": 15
+  },
+  {
+    "nome": "3 CPF PACIENTE",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 20.058,
+      "y1": 726.549,
+      "x2": 145.226,
+      "y2": 741.268
+    },
+    "max_caracteres": 14
+  },
+  {
+    "nome": "3-indCPF",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 158.842,
+      "y1": 725.637,
+      "x2": 174.024,
+      "y2": 746.21
+    },
+    "max_caracteres": 1
+  },
+  {
+    "nome": "4 CNS PACIENTE",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 307.14,
+      "y1": 725.691,
+      "x2": 432.545,
+      "y2": 738.527
+    },
+    "max_caracteres": 15
+  },
+  {
+    "nome": "6-nomecivil",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 24.2007,
+      "y1": 698.696,
+      "x2": 576.379,
+      "y2": 714.79
+    },
+    "max_caracteres": 105
+  },
+  {
+    "nome": "7-nomesocial",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 25.1088,
+      "y1": 670.341,
+      "x2": 574.673,
+      "y2": 686.603
+    },
+    "max_caracteres": 105
+  },
+  {
+    "nome": "8 Data de Nascimento",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 16.8917,
+      "y1": 638.511,
+      "x2": 108.572,
+      "y2": 654.663
+    },
+    "max_caracteres": null
+  },
+  {
+    "nome": "9 SEXO",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 114.731,
+      "y1": 638.983,
+      "x2": 128.82,
+      "y2": 656.348
+    },
+    "max_caracteres": 1
+  },
+  {
+    "nome": "10-País_nasc",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 210.371,
+      "y1": 639.982,
+      "x2": 365.204,
+      "y2": 656.745
+    },
+    "max_caracteres": 30
+  },
+  {
+    "nome": "11-munic-nasc",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 369.596,
+      "y1": 638.479,
+      "x2": 512.634,
+      "y2": 654.248
+    },
+    "max_caracteres": 30
+  },
+  {
+    "nome": "12-UF_nasc",
+    "tipo": "escolha",
+    "coordenadas": {
+      "x1": 543.224,
+      "y1": 630.8,
+      "x2": 568.768,
+      "y2": 653.418
+    },
+    "max_caracteres": null,
+    "opcoes": [
+      " ",
+      "AC",
+      "AL",
+      "AM",
+      "AP",
+      "BA",
+      "CE",
+      "DF",
+      "ES",
+      "GO",
+      "MA",
+      "MG",
+      "MS",
+      "MT",
+      "PA",
+      "PB",
+      "PE",
+      "PI",
+      "PR",
+      "RJ",
+      "RN",
+      "RO",
+      "RR",
+      "RS",
+      "SC",
+      "SE",
+      "SP",
+      "TO"
+    ]
+  },
+  {
+    "nome": "15 RAÇA",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 16.3705,
+      "y1": 579.755,
+      "x2": 30.4065,
+      "y2": 596.247
+    },
+    "max_caracteres": 1
+  },
+  {
+    "nome": "15 ETNIA",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 77.4484,
+      "y1": 578.49,
+      "x2": 124.712,
+      "y2": 588.102
+    },
+    "max_caracteres": 20
+  },
+  {
+    "nome": "16 Escolaridade",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 207.402,
+      "y1": 581.119,
+      "x2": 220.429,
+      "y2": 597.354
+    },
+    "max_caracteres": 1
+  },
+  {
+    "nome": "17-Gestante",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 380.718,
+      "y1": 581.061,
+      "x2": 393.912,
+      "y2": 596.975
+    },
+    "max_caracteres": 1
+  },
+  {
+    "nome": "18-IG",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 451.026,
+      "y1": 585.644,
+      "x2": 467.714,
+      "y2": 598.975
+    },
+    "max_caracteres": 2
+  },
+  {
+    "nome": "23 endereco",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 31.3162,
+      "y1": 494.687,
+      "x2": 579.782,
+      "y2": 510.102
+    },
+    "max_caracteres": 100
+  },
+  {
+    "nome": "24 Bairro",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 29.3363,
+      "y1": 456.302,
+      "x2": 204.745,
+      "y2": 473.462
+    },
+    "max_caracteres": 35
+  },
+  {
+    "nome": "25 CEP",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 212.185,
+      "y1": 456.898,
+      "x2": 284.37,
+      "y2": 473.092
+    },
+    "max_caracteres": null
+  },
+  {
+    "nome": "26 MUNICIPIO de residência do usuário sus",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 292.781,
+      "y1": 458.252,
+      "x2": 518.643,
+      "y2": 475.412
+    },
+    "max_caracteres": 35
+  },
+  {
+    "nome": "27-UF_resid",
+    "tipo": "escolha",
+    "coordenadas": {
+      "x1": 543.756,
+      "y1": 453.221,
+      "x2": 573.428,
+      "y2": 475.839
+    },
+    "max_caracteres": null,
+    "opcoes": [
+      " ",
+      "AC",
+      "AL",
+      "AM",
+      "AP",
+      "BA",
+      "CE",
+      "DF",
+      "ES",
+      "GO",
+      "MA",
+      "MG",
+      "MS",
+      "MT",
+      "PA",
+      "PB",
+      "PE",
+      "PI",
+      "PR",
+      "RJ",
+      "RN",
+      "RO",
+      "RR",
+      "RS",
+      "SC",
+      "SE",
+      "SP",
+      "TO"
+    ]
+  },
+  {
+    "nome": "28-motivo",
+    "tipo": "escolha",
+    "coordenadas": {
+      "x1": 29.2754,
+      "y1": 392.511,
+      "x2": 288.166,
+      "y2": 412.511
+    },
+    "max_caracteres": null,
+    "opcoes": [
+      "Selecione uma opção",
+      "Investigação de infecção viral aguda pelo HIV",
+      "Diagnóstico",
+      "Monitoramento de pessoas que estão em tratamento antirretroviral28.4",
+      "Avaliação de pessoas em perda de seguimento"
+    ]
+  },
+  {
+    "nome": "29 simultanea",
+    "tipo": "escolha",
+    "coordenadas": {
+      "x1": 404.36,
+      "y1": 392.653,
+      "x2": 476.36,
+      "y2": 407.089
+    },
+    "max_caracteres": null,
+    "opcoes": [
+      "Selecione uma opção",
+      "Sim",
+      "Não"
+    ]
+  },
+  {
+    "nome": "30 CID10",
+    "tipo": "escolha",
+    "coordenadas": {
+      "x1": 72.0434,
+      "y1": 353.508,
+      "x2": 173.28,
+      "y2": 375.799
+    },
+    "max_caracteres": null,
+    "opcoes": [
+      "Selecione uma opção",
+      "B24",
+      "Outro**"
+    ]
+  },
+  {
+    "nome": "30 outro",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 254.742,
+      "y1": 353.222,
+      "x2": 577.67,
+      "y2": 370.862
+    },
+    "max_caracteres": 70
+  },
+  {
+    "nome": "34 Data da Solicitação",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 243.857,
+      "y1": 280.717,
+      "x2": 377.657,
+      "y2": 295.866
+    },
+    "max_caracteres": null
+  },
+  {
+    "nome": "35 Nome de instituição",
+    "tipo": "texto",
+    "coordenadas": {
+      "x1": 27.7037,
+      "y1": 238.212,
+      "x2": 400.324,
+      "y2": 253.692
+    },
+    "max_caracteres": 90
+  }
+]
