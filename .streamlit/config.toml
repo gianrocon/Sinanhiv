@@ -1,0 +1,2 @@
+[server]
+folderWatchBlacklist = ["forms_externos", "fichas_sinan", ".venv"]
