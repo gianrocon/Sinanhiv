@@ -34,7 +34,7 @@ _RADIOS_PAGINA_1 = [
 # (chave_no_form_data, x, y, font_size)
 
 _TEXT_FIELDS_P1 = [
-    ("nome_paciente", 22.0, 101.0, 8.0),
+    ("nome_paciente", 22.0, 104.0, 10.4),
 ]
 
 _BLACK = (0.0, 0.0, 0.0)
@@ -71,6 +71,7 @@ def fill_siclom(form_data: dict) -> bytes:
         value = str(raw).upper().strip()
         page.insert_text(fitz.Point(x, y), value, fontname="helv", fontsize=fs, color=_BLACK)
 
+    doc.select([0])   # página 1 apenas
     pdf_bytes = doc.tobytes()
     doc.close()
     return pdf_bytes

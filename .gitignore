@@ -40,3 +40,10 @@ fichas_sinan/Tuberculose_v5/dicionario_de_dados.pdf
 fichas_sinan/Tuberculose_v5/teste_output.pdf
 fichas_sinan/Tuberculose_v5/calibracao_output.pdf
 fichas_sinan/Tuberculose_v5/grid_output.pdf
+
+# Temporarios de desenvolvimento — Carga Viral
+carga_viral_fields.json
+carga_viral_campos_final.pdf
+gerar_pdf_visual.py
+teste_tb.pdf
+teste_tb_crop.png

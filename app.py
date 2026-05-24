@@ -18,6 +18,7 @@ from form_renderer import render_generic, get_fixed_fields
 from pdf_filler import fill_pdf
 from clipboard_import import parse_clipboard
 from siclom_filler import fill_siclom
+from carga_viral_filler import fill_carga_viral
 
 _FICHAS_DIR = Path(__file__).parent / "fichas_sinan"
 
@@ -298,27 +299,35 @@ def _show_form(form_folder: Path) -> None:
         _pdf_error = e
 
     siblings = _SIBLING_LINKS.get(form_folder.name, [])
-    has_siclom = form_folder.name == "Aids_adulto_v5"
+    _is_aids = form_folder.name == "Aids_adulto_v5"
+    has_siclom       = _is_aids
+    has_carga_viral  = _is_aids
 
-    # Gerar SICLOM (só ficha AIDS)
-    _siclom_bytes = None
-    _siclom_error = None
+    # Gerar SICLOM e Carga Viral (só ficha AIDS)
+    _siclom_bytes = _siclom_error = None
+    _cv_bytes     = _cv_error     = None
     if has_siclom:
         try:
             _siclom_bytes = fill_siclom(form_data)
         except Exception as e:
             _siclom_error = e
+    if has_carga_viral:
+        try:
+            _cv_bytes = fill_carga_viral(form_data)
+        except Exception as e:
+            _cv_error = e
 
-    # Layout: Baixar PDF | [SICLOM] | Nova Notificação | ← Voltar | [irmãs...]
+    # Layout: Baixar PDF | [SICLOM] | [Carga Viral] | Nova Notificação | ← Voltar | [irmãs...]
     n_extra = 1 + len(siblings)  # Voltar + irmãs
     siclom_col = [1] if has_siclom else []
-    bottom_cols = st.columns([2] + siclom_col + [2] + [1] * n_extra)
+    cv_col     = [1] if has_carga_viral else []
+    bottom_cols = st.columns([2] + siclom_col + cv_col + [2] + [1] * n_extra)
     col_idx = 0
 
     with bottom_cols[col_idx]:
         if _pdf_bytes is not None:
             st.download_button(
-                label="Baixar PDF",
+                label="Baixar SINAN",
                 data=_pdf_bytes,
                 file_name=f"notificacao_{form_folder.name.lower()}.pdf",
                 mime="application/pdf",
@@ -341,6 +350,21 @@ def _show_form(form_folder: Path) -> None:
                 )
             else:
                 st.error(f"SICLOM: {_siclom_error}")
+        col_idx += 1
+
+    if has_carga_viral:
+        with bottom_cols[col_idx]:
+            if _cv_bytes is not None:
+                st.download_button(
+                    label="Gerar Carga Viral",
+                    data=_cv_bytes,
+                    file_name="carga_viral.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key=f"cv_{form_folder.name}",
+                )
+            else:
+                st.error(f"Carga Viral: {_cv_error}")
         col_idx += 1
 
     with bottom_cols[col_idx]:
