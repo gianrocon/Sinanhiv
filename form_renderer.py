@@ -77,7 +77,7 @@ def get_fixed_fields(form_folder: Path) -> dict:
 # ---------------------------------------------------------------------------
 
 def _date_input(label: str, key: str, default: str = "") -> date | None:
-    raw = st.text_input(label, value=default, placeholder="dd/mm/aaaa", key=_k(key))
+    raw = st.text_input(label, value=default, placeholder="dd/mm/aaaa", key=_k(key), autocomplete="off")
     if not raw:
         return None
     for fmt in ("%d/%m/%Y", "%d%m%Y"):
@@ -158,10 +158,10 @@ def _widget_for(field: str, label: str, default: str,
 
     # UF (2 chars)
     if "uf" in field and prefix in ("sg", "co", "id", ""):
-        return st.text_input(label, value=default, max_chars=2, key=_k(field))
+        return st.text_input(label, value=default, max_chars=2, key=_k(field), autocomplete="off")
 
     # Texto livre para o restante
-    return st.text_input(label, value=default, key=_k(field))
+    return st.text_input(label, value=default, key=_k(field), autocomplete="off")
 
 
 # ---------------------------------------------------------------------------

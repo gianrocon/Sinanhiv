@@ -276,6 +276,7 @@ def _show_form(form_folder: Path) -> None:
             key=_paste_key,
             label_visibility="collapsed",
             on_change=_do_import,
+            autocomplete="off",
         )
         if st.button("Importar", key=f"btn_import_{form_folder.name}"):
             _do_import()
