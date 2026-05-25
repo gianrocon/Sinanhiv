@@ -269,7 +269,12 @@ def _show_form(form_folder: Path) -> None:
             else:
                 st.session_state[_warn_key] = "Nenhum campo reconhecido corresponde a esta ficha."
 
-        st.markdown("**Importar dados do paciente**")
+        st.markdown(
+            "**Importar dados do paciente**&nbsp;"
+            "<a href='?show_config=1' style='font-weight:normal;font-size:0.82em;"
+            "color:inherit;opacity:0.5;text-decoration:none'>(configurar)</a>",
+            unsafe_allow_html=True,
+        )
         st.text_input(
             "Cole o texto copiado do sistema",
             placeholder="Nome: ... | SUS: ... | Nascimento: ... | Mãe: ...",
@@ -424,12 +429,66 @@ def _show_form(form_folder: Path) -> None:
                 st.rerun()
 
 
+def _show_config() -> None:
+    _bookmarklet_path = Path(__file__).parent / "bookmarklet_vida" / "SCRIPT.js"
+    _bookmarklet_code = _bookmarklet_path.read_text(encoding="utf-8").strip()
+
+    st.markdown("<div style='margin-top:3rem'></div>", unsafe_allow_html=True)
+    if st.button("← Voltar"):
+        st.session_state.show_config = False
+        st.rerun()
+
+    st.title("Configurar importação de dados do paciente")
+
+    st.markdown(
+        "O **bookmarklet VIDA** é um favorito especial no navegador. "
+        "Ao ser clicado na página do prontuário do paciente, ele copia automaticamente "
+        "os dados cadastrais para a área de transferência — pronto para colar aqui no SINAN."
+    )
+
+    st.subheader("1. Copie o código abaixo")
+    st.code(_bookmarklet_code, language="javascript")
+
+    st.subheader("2. Crie um favorito no navegador")
+    st.markdown(
+        "- Pressione **Ctrl+Shift+O** (Chrome/Edge) para abrir o gerenciador de favoritos  \n"
+        "- Clique em **Adicionar favorito** ou **Novo favorito**  \n"
+        "- No campo **Nome**, escreva algo como: `VIDA - Copiar dados`  \n"
+        "- No campo **URL**, cole o código copiado no passo anterior "
+        "(o texto inteiro, começando com `javascript:`)  \n"
+        "- Salve"
+    )
+
+    st.subheader("3. Mostre a barra de favoritos")
+    st.markdown(
+        "- **Chrome / Edge**: pressione **Ctrl+Shift+B** para exibir a barra  \n"
+        "- O favorito **\"VIDA - Copiar dados\"** deve aparecer nela"
+    )
+
+    st.subheader("4. Como usar no dia a dia")
+    st.markdown(
+        "1. Abra o sistema VIDA no navegador  \n"
+        "2. Navegue até a página do prontuário do paciente — a que mostra nome, "
+        "cartão SUS, data de nascimento e nome da mãe  \n"
+        "3. Clique no favorito **\"VIDA - Copiar dados\"** na barra de favoritos  \n"
+        "4. Uma notificação verde **\"Dados copiados!\"** aparecerá brevemente na tela  \n"
+        "5. Volte para esta aba do SINAN e cole o texto no campo de importação (**Ctrl+V**)"
+    )
+
+
 # ── Roteamento ───────────────────────────────────────────────────────────────
 
 if "current_form" not in st.session_state:
     st.session_state.current_form = None
 
-if st.session_state.current_form is None:
+if st.query_params.get("show_config") == "1":
+    st.query_params.clear()
+    st.session_state.show_config = True
+    st.rerun()
+
+if st.session_state.get("show_config"):
+    _show_config()
+elif st.session_state.current_form is None:
     _show_home()
 else:
     _show_form(Path(st.session_state.current_form))
