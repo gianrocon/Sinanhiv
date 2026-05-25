@@ -43,9 +43,21 @@ Responda sempre em **português brasileiro**. Mensagens de commit, comentários 
 - Ambos recebem o mesmo `form_data` da ficha AIDS (incluindo campos comuns como `cpf`).
 - Novas versões desses formulários devem seguir o mesmo padrão: `_FIELDS` com `(chave, x, y, font_size_base)`, `_FS = 1.2` como multiplicador.
 
+## Roteamento de páginas (app.py)
+
+O app tem três telas controladas por `st.session_state`:
+
+| Estado | Tela exibida |
+|---|---|
+| `current_form = None` | Home (lista de fichas) |
+| `current_form = "<caminho>"` | Formulário da ficha |
+| `show_config = True` | Página de configuração do bookmarklet |
+
+O link `(configurar)` usa `<a href='?show_config=1'>` (HTML inline no `st.markdown`). O roteamento detecta o query param, limpa-o e seta `show_config = True` antes de qualquer render. Não usar `st.button` para esse link — o query param é necessário para ficar inline com o texto do label.
+
 ## Integrações externas
 
-- `bookmarklet_vida/` — bookmarklet para importar dados do sistema VIDA; ver README interno.
+- `bookmarklet_vida/SCRIPT.js` — código do bookmarklet que extrai dados do DOM do sistema VIDA e copia no formato `Nome: X | SUS: Y | Prontuário: Z | Nascimento: W | Mãe: V`. A página de configuração (`_show_config()` em `app.py`) exibe esse código e as instruções de instalação.
 
 ## Shell
 - Ambiente: Windows 11, PowerShell 5.1
