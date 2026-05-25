@@ -43,6 +43,10 @@ Responda sempre em **português brasileiro**. Mensagens de commit, comentários 
 - Ambos recebem o mesmo `form_data` da ficha AIDS (incluindo campos comuns como `cpf`).
 - Novas versões desses formulários devem seguir o mesmo padrão: `_FIELDS` com `(chave, x, y, font_size_base)`, `_FS = 1.2` como multiplicador.
 
+## Integrações externas
+
+- `bookmarklet_vida/` — bookmarklet para importar dados do sistema VIDA; ver README interno.
+
 ## Shell
 - Ambiente: Windows 11, PowerShell 5.1
 - Operadores `&&` e `||` **não existem** no PS 5.1 — usar `; if ($?) { }` para encadear com verificação
