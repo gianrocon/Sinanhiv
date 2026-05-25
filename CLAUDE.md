@@ -31,6 +31,18 @@ Responda sempre em **português brasileiro**. Mensagens de commit, comentários 
 - Salvar JSONs via Python com `open(path, "w", encoding="utf-8")`
 - **Nunca** usar `Out-File` sem especificar encoding; preferir `[System.IO.File]::WriteAllText`
 
+## Convenções de campo — field_coords.json
+
+- Campos UI-only (aparecem no formulário Streamlit mas **não** devem ser escritos no PDF SINAN) recebem `"skip_pdf": true` no `field_coords.json`.
+- `pdf_filler._load_coords` filtra automaticamente entradas com `skip_pdf: true`.
+- Exemplo: campo `cpf` da ficha AIDS — presente no formulário e nos PDFs de CV/CD4, ausente no PDF SINAN.
+
+## Formulários de exames laboratoriais
+
+- `carga_viral_filler.py` e `cd4_filler.py` preenchem PDFs em `forms_externos/`.
+- Ambos recebem o mesmo `form_data` da ficha AIDS (incluindo campos comuns como `cpf`).
+- Novas versões desses formulários devem seguir o mesmo padrão: `_FIELDS` com `(chave, x, y, font_size_base)`, `_FS = 1.2` como multiplicador.
+
 ## Shell
 - Ambiente: Windows 11, PowerShell 5.1
 - Operadores `&&` e `||` **não existem** no PS 5.1 — usar `; if ($?) { }` para encadear com verificação
