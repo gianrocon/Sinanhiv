@@ -6,7 +6,7 @@
 
 ## Formato copiado
 
-```
+```text
 Nome: ANTONIO DO CARMO CABRAL | SUS: 706301724891171 | Prontuário: 07093 | Nascimento: 11/10/1967 | Mãe: AMERICA DO CARMO SANTANA CABRAL
 ```
 
