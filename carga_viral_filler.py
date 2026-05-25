@@ -37,6 +37,8 @@ _FIELDS = [
     ("unidade_saude",        22.9,  67.0, 8.0),
     # 2 — CNES  (+2 y)
     ("codigo_unidade_saude", 480.9, 67.0, 8.0),
+    # 3 — CPF do paciente
+    ("cpf",                   22.1, 110.4, 8.0),
     # 4 — CNS do paciente
     ("cartao_sus",           309.1, 110.4, 8.0),
     # 6 — Nome civil  (+2 y)

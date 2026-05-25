@@ -29,7 +29,7 @@ _UPPERCASE_FIELDS = {
 def _load_coords(form_folder: Path) -> dict[str, tuple[int, float, float]]:
     with open(form_folder / "field_coords.json", encoding="utf-8") as f:
         raw = json.load(f)
-    return {k: (v["page"], v["x"], v["y"]) for k, v in raw.items()}
+    return {k: (v["page"], v["x"], v["y"]) for k, v in raw.items() if not v.get("skip_pdf")}
 
 
 def _load_app_cfg(form_folder: Path) -> dict:
