@@ -61,6 +61,9 @@ _FIELDS = [
     ("uf_residencia",        563.2, 368.4, 9.0),
 ]
 
+# Checkbox "Avaliação inicial" (item 29) — retângulo preenchido
+_CHECKBOX_AVALIACAO = fitz.Rect(25.51, 413.85, 31.18, 420.09)
+
 _UPPERCASE_FIELDS = {"_endereco", "bairro"}
 _WHITE_BG_FIELDS  = {"data_nascimento"}
 
@@ -138,6 +141,9 @@ def fill_cd4(form_data: dict) -> bytes:
     data = _build_data(form_data)
     doc  = fitz.open(str(_CD4_PDF))
     page = doc[0]
+
+    # Marca checkbox "Avaliação inicial" (item 29)
+    page.draw_rect(_CHECKBOX_AVALIACAO, color=_BLACK, fill=_BLACK, width=0)
 
     for field, x, y, fs in _FIELDS:
         raw = data.get(field)
