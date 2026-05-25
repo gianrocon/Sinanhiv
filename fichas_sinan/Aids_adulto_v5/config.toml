@@ -71,6 +71,9 @@ campos = [
 
 # ── Widgets customizados por campo ──────────────────────────────────────────
 
+[fields.ocupacao]
+col_span = 4
+
 [fields.nome_paciente]
 col_span = 3
 
