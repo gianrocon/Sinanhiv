@@ -19,6 +19,7 @@ from pdf_filler import fill_pdf
 from clipboard_import import parse_clipboard
 from siclom_filler import fill_siclom
 from carga_viral_filler import fill_carga_viral
+from cd4_filler import fill_cd4
 
 _FICHAS_DIR = Path(__file__).parent / "fichas_sinan"
 
@@ -302,10 +303,12 @@ def _show_form(form_folder: Path) -> None:
     _is_aids = form_folder.name == "Aids_adulto_v5"
     has_siclom       = _is_aids
     has_carga_viral  = _is_aids
+    has_cd4          = _is_aids
 
-    # Gerar SICLOM e Carga Viral (só ficha AIDS)
+    # Gerar SICLOM, Carga Viral e CD4 (só ficha AIDS)
     _siclom_bytes = _siclom_error = None
     _cv_bytes     = _cv_error     = None
+    _cd4_bytes    = _cd4_error    = None
     if has_siclom:
         try:
             _siclom_bytes = fill_siclom(form_data)
@@ -316,12 +319,18 @@ def _show_form(form_folder: Path) -> None:
             _cv_bytes = fill_carga_viral(form_data)
         except Exception as e:
             _cv_error = e
+    if has_cd4:
+        try:
+            _cd4_bytes = fill_cd4(form_data)
+        except Exception as e:
+            _cd4_error = e
 
-    # Layout: Baixar PDF | [SICLOM] | [Carga Viral] | Nova Notificação | ← Voltar | [irmãs...]
+    # Layout: Baixar SINAN | [SICLOM] | [Carga Viral] | [CD4] | Nova Notificação | ← Voltar | [irmãs...]
     n_extra = 1 + len(siblings)  # Voltar + irmãs
     siclom_col = [1] if has_siclom else []
     cv_col     = [1] if has_carga_viral else []
-    bottom_cols = st.columns([2] + siclom_col + cv_col + [2] + [1] * n_extra)
+    cd4_col    = [1] if has_cd4 else []
+    bottom_cols = st.columns([2] + siclom_col + cv_col + cd4_col + [2] + [1] * n_extra)
     col_idx = 0
 
     with bottom_cols[col_idx]:
@@ -365,6 +374,21 @@ def _show_form(form_folder: Path) -> None:
                 )
             else:
                 st.error(f"Carga Viral: {_cv_error}")
+        col_idx += 1
+
+    if has_cd4:
+        with bottom_cols[col_idx]:
+            if _cd4_bytes is not None:
+                st.download_button(
+                    label="Gerar CD4",
+                    data=_cd4_bytes,
+                    file_name="cd4.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key=f"cd4_{form_folder.name}",
+                )
+            else:
+                st.error(f"CD4: {_cd4_error}")
         col_idx += 1
 
     with bottom_cols[col_idx]:
