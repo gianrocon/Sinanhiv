@@ -1,6 +1,6 @@
 [form]
 name = "AIDS Adulto"
-description = "Ficha de Notificação/Investigação Individual — AIDS em maiores de 13 anos (v5)"
+description = "Ficha de Notificação AIDS Adulto"
 pdf = "Aids_adulto_v5.pdf"
 sni_fields = [
   "sanguinea_drogas", "sanguinea_hemofilia", "sanguinea_transfusao", "sanguinea_acidente",

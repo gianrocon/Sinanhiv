@@ -148,6 +148,11 @@ def _widget_for(field: str, label: str, default: str,
                                   key=_k(field))
             return _resolve_value(choice, opts, values)
 
+    # Checkbox
+    if cfg_field.get("widget") == "checkbox":
+        checked = str(default).lower() in ("true", "1")
+        return st.checkbox(label, value=checked, key=_k(field))
+
     # Data
     if prefix in ("dt", "data") or field.endswith("_data"):
         return _date_input(label, field, default=default)
@@ -195,6 +200,10 @@ def _col_span(field: str, cfg_field: dict, sni_set: set) -> int:
 
     # Palavras-chave de campos curtos (sem prefixo padrão)
     if any(kw in fn for kw in _NARROW_KEYWORDS):
+        return 1
+
+    # Checkbox individual
+    if cfg_field.get("widget") == "checkbox":
         return 1
 
     # SNI radio (Sim/Não/Ignorado)

@@ -1,6 +1,6 @@
 [form]
 name        = "Tuberculose"
-description = "Ficha de Notificação/Investigação Individual — Tuberculose (v5)"
+description = "Ficha de Notificação Tuberculose"
 pdf         = "Tuberculose_v5.pdf"
 sni_fields  = [
   "tp_pop_liberdade", "tp_pop_rua", "tp_pop_profissional",

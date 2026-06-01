@@ -5,7 +5,7 @@ Responda sempre em **português brasileiro**. Mensagens de commit, comentários 
 
 ## Ambiente Python
 - Interpretador: sempre usar `.venv\Scripts\python.exe` (nunca `python`, `python3` ou `py`)
-- Versão: **Python 3.14.4**
+- Versão: **Python 3.14.5**
 - O venv já existe na raiz do projeto; não recriar sem motivo explícito
 
 ## Plataforma de deploy
@@ -55,9 +55,36 @@ O app tem três telas controladas por `st.session_state`:
 
 O link `(configurar)` usa `<a href='?show_config=1'>` (HTML inline no `st.markdown`). O roteamento detecta o query param, limpa-o e seta `show_config = True` antes de qualquer render. Não usar `st.button` para esse link — o query param é necessário para ficar inline com o texto do label.
 
+## Home page — seções SINAN e EXAMES
+
+A home exibe duas seções separadas:
+
+- **SINAN**: fichas cujo `form_folder.name` **não** esteja em `_EXAMES_FORMS` (set definido em `app.py`)
+- **EXAMES**: fichas em `_EXAMES_FORMS` + cards externos (ex: Lacsparser via `st.link_button`)
+
+Para mover uma ficha para a seção EXAMES, adicionar seu `folder.name` ao set `_EXAMES_FORMS`.
+
+## Formulário de Baciloscopia
+
+- Filler customizado: `baciloscopia_filler.py` (não usa `pdf_filler.py`)
+- PDFs: `fichas_sinan/Baciloscopia/baciloscopia.pdf` (simples) e `baciloscopia_duplo.pdf` (dois formulários lado a lado, offset 420.7 pt)
+- Quando `amostra == "bac_diag_1"`: usa o PDF duplo, preenche lado esquerdo com Diag. 1ª e lado direito com Diag. 2ª; a 2ª amostra sempre recebe `encaminhar_cultura = "Não"` e `data_coleta = None`
+- `_fill_page(page, form_data, dx, amostra_override, field_overrides)` — `field_overrides` sobrepõe valores pontuais sem mutar o dict original
+- Campos automáticos (ocultos do UI via `[hidden]` no config.toml): `data_atendimento` (sempre hoje), `tipo_escarro` (sempre marcado), `trm_tb` (Sim por padrão, Não para amostras de controle)
+
+## Navegação cruzada TB → Baciloscopia
+
+- `_SIBLING_LINKS["Tuberculose_v5"]` inclui `("Baciloscopia", "Baciloscopia")`
+- A função `_collect_tb_to_baciloscopia(form_data)` faz o mapeamento:
+  - Campos diretos: `nome_paciente`, `data_nascimento`, `cartao_sus`, `nome_mae`, `bairro`
+  - Endereço composto: `logradouro + numero_residencia + complemento` → `logradouro_complemento`
+  - Raça: código SINAN (`"4"`) → label texto (`"Parda"`) via `_RACA_COR_LABEL`
+  - Telefone: `ddd_telefone` → `telefone` (só transfere se disponível)
+
 ## Integrações externas
 
 - `bookmarklet_vida/SCRIPT.js` — código do bookmarklet que extrai dados do DOM do sistema VIDA e copia no formato `Nome: X | SUS: Y | Prontuário: Z | Nascimento: W | Mãe: V`. A página de configuração (`_show_config()` em `app.py`) exibe esse código e as instruções de instalação.
+- **Lacsparser** — app externo em `https://lacsparser.streamlit.app/`, exibido como card na seção EXAMES da home.
 
 ## Shell
 - Ambiente: Windows 11, PowerShell 5.1

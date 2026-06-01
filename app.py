@@ -20,6 +20,7 @@ from clipboard_import import parse_clipboard
 from siclom_filler import fill_siclom
 from carga_viral_filler import fill_carga_viral
 from cd4_filler import fill_cd4
+from baciloscopia_filler import fill_baciloscopia
 
 _FICHAS_DIR = Path(__file__).parent / "fichas_sinan"
 
@@ -36,7 +37,12 @@ _COMMON_FIELDS = [
 # Mapeamento de fichas irmãs: nome_pasta → [(label_botão, nome_pasta_destino)]
 _SIBLING_LINKS: dict[str, list[tuple[str, str]]] = {
     "Aids_adulto_v5":  [("SINAN Tuberculose", "Tuberculose_v5")],
-    "Tuberculose_v5":  [("SINAN HIV",          "Aids_adulto_v5")],
+    "Tuberculose_v5":  [("SINAN HIV", "Aids_adulto_v5"), ("Baciloscopia", "Baciloscopia")],
+}
+
+_RACA_COR_LABEL: dict[str, str] = {
+    "1": "Branca", "2": "Preta", "3": "Amarela",
+    "4": "Parda",  "5": "Indígena", "9": "Ignorado",
 }
 
 # ── Configuração da página ───────────────────────────────────────────────────
@@ -116,12 +122,14 @@ div[data-testid="stDownloadButton"] button:hover {
     background-color: #218838 !important;
     border-color: #1e7e34 !important;
 }
-div[data-testid="stButton"] button {
+div[data-testid="stButton"] button,
+div[data-testid="stLinkButton"] a {
     background-color: #1565c0 !important;
     border-color: #1565c0 !important;
     color: white !important;
 }
-div[data-testid="stButton"] button:hover {
+div[data-testid="stButton"] button:hover,
+div[data-testid="stLinkButton"] a:hover {
     background-color: #0d47a1 !important;
     border-color: #0d47a1 !important;
 }
@@ -162,20 +170,10 @@ def _form_is_ready(form_folder: Path) -> bool:
 
 # ── Telas ────────────────────────────────────────────────────────────────────
 
-def _show_home() -> None:
-    st.title("SINAN")
-    st.markdown("#### Selecione a ficha de notificação")
+_EXAMES_FORMS = {"Baciloscopia"}
 
-    forms = _discover_forms()
 
-    if not forms:
-        st.info(
-            "Nenhuma ficha disponível. "
-            "Use a skill **sinan-coords-create** para mapear os campos de uma ficha PDF."
-        )
-        return
-
-    # Grade de cards — até 3 por linha
+def _render_form_cards(forms: list[Path]) -> None:
     cols = st.columns(3)
     for i, form_folder in enumerate(forms):
         meta  = _load_form_meta(form_folder)
@@ -199,6 +197,62 @@ def _show_home() -> None:
                               use_container_width=True, disabled=True)
 
 
+def _show_home() -> None:
+    st.title("FORMULÁRIOS")
+
+    forms = _discover_forms()
+
+    if not forms:
+        st.info(
+            "Nenhuma ficha disponível. "
+            "Use a skill **sinan-coords-create** para mapear os campos de uma ficha PDF."
+        )
+        return
+
+    sinan_forms = [f for f in forms if f.name not in _EXAMES_FORMS]
+    exames_forms = [f for f in forms if f.name in _EXAMES_FORMS]
+
+    if sinan_forms:
+        st.markdown("#### SINAN")
+        _render_form_cards(sinan_forms)
+
+    if exames_forms:
+        st.markdown("#### EXAMES")
+        cols = st.columns(3)
+        col_idx = 0
+
+        # Card externo: Lacsparser
+        with cols[col_idx % 3]:
+            with st.container(border=True):
+                st.markdown("**Lacsparser**")
+                st.caption("Análise de laudos laboratoriais. Solicitação de Exames de Rotina")
+                st.link_button("Abrir", "https://lacsparser.streamlit.app/",
+                               use_container_width=True)
+        col_idx += 1
+
+        # Cards das fichas de exame
+        for form_folder in exames_forms:
+            meta  = _load_form_meta(form_folder)
+            name  = meta.get("name", form_folder.name)
+            desc  = meta.get("description", "")
+            ready = _form_is_ready(form_folder)
+            with cols[col_idx % 3]:
+                with st.container(border=True):
+                    st.markdown(f"**{name}**")
+                    if desc:
+                        st.caption(desc)
+                    if ready:
+                        if st.button("Abrir", key=f"open_{form_folder.name}",
+                                     use_container_width=True):
+                            st.session_state.current_form = str(form_folder)
+                            st.rerun()
+                    else:
+                        st.caption(":orange[Aguardando configuração — crie o config.toml]")
+                        st.button("Abrir", key=f"open_{form_folder.name}",
+                                  use_container_width=True, disabled=True)
+            col_idx += 1
+
+
 def _collect_common(form_data: dict) -> dict:
     """Extrai os campos comuns do form_data atual para prefill da ficha destino."""
     result = {}
@@ -207,6 +261,41 @@ def _collect_common(form_data: dict) -> dict:
         if val is None or val == "":
             continue
         result[field] = val.strftime("%d/%m/%Y") if hasattr(val, "strftime") else str(val)
+    return result
+
+
+def _collect_tb_to_baciloscopia(form_data: dict) -> dict:
+    """Mapeia campos da ficha Tuberculose para prefill da Baciloscopia."""
+    result = {}
+
+    for field in ("nome_paciente", "data_nascimento", "cartao_sus", "nome_mae", "bairro"):
+        val = form_data.get(field)
+        if val is None or val == "":
+            continue
+        result[field] = val.strftime("%d/%m/%Y") if hasattr(val, "strftime") else str(val)
+
+    # Endereço composto: logradouro + número + complemento
+    partes = [
+        str(form_data.get("logradouro") or "").strip(),
+        str(form_data.get("numero_residencia") or "").strip(),
+    ]
+    comp = str(form_data.get("complemento") or "").strip()
+    if comp:
+        partes.append(comp)
+    endereco = ", ".join(p for p in partes if p)
+    if endereco:
+        result["logradouro_complemento"] = endereco
+
+    # Telefone (campo ddd_telefone da TB → telefone da Baciloscopia)
+    tel = str(form_data.get("ddd_telefone") or "").strip()
+    if tel:
+        result["telefone"] = tel
+
+    # Raça/cor: código SINAN → label texto
+    raca_code = str(form_data.get("raca_cor") or "")
+    if raca_code in _RACA_COR_LABEL:
+        result["raca"] = _RACA_COR_LABEL[raca_code]
+
     return result
 
 
@@ -252,7 +341,9 @@ def _show_form(form_folder: Path) -> None:
         _warn_key  = f"import_warn_{form_folder.name}"
 
         def _do_import():
-            text = st.session_state.get(_paste_key, "")
+            text = st.session_state.get(_paste_key, "").strip()
+            if not text:
+                return
             parsed = parse_clipboard(text)
             if not parsed:
                 st.session_state[_warn_key] = "Nenhum campo reconhecido no texto colado."
@@ -296,12 +387,16 @@ def _show_form(form_folder: Path) -> None:
 
     _pdf_bytes = None
     _pdf_error = None
+    _is_baciloscopia = form_folder.name == "Baciloscopia"
     try:
-        all_data = {**form_data, **get_fixed_fields(form_folder)}
-        _data_diag = form_data.get("lab_triagem_data") or form_data.get("lab_rapidos_data")
-        if _data_diag:
-            all_data["data_diagnostico"] = _data_diag
-        _pdf_bytes = fill_pdf(all_data, form_folder)
+        if _is_baciloscopia:
+            _pdf_bytes = fill_baciloscopia(form_data)
+        else:
+            all_data = {**form_data, **get_fixed_fields(form_folder)}
+            _data_diag = form_data.get("lab_triagem_data") or form_data.get("lab_rapidos_data")
+            if _data_diag:
+                all_data["data_diagnostico"] = _data_diag
+            _pdf_bytes = fill_pdf(all_data, form_folder)
     except Exception as e:
         _pdf_error = e
 
@@ -341,8 +436,9 @@ def _show_form(form_folder: Path) -> None:
 
     with bottom_cols[col_idx]:
         if _pdf_bytes is not None:
+            _dl_label = "Baixar Baciloscopia" if _is_baciloscopia else "Baixar SINAN"
             st.download_button(
-                label="Baixar SINAN",
+                label=_dl_label,
                 data=_pdf_bytes,
                 file_name=f"notificacao_{form_folder.name.lower()}.pdf",
                 mime="application/pdf",
@@ -398,7 +494,8 @@ def _show_form(form_folder: Path) -> None:
         col_idx += 1
 
     with bottom_cols[col_idx]:
-        if st.button("Nova Notificação", use_container_width=True):
+        _nova_label = "Novo Exame" if _is_baciloscopia else "Nova Notificação"
+        if st.button(_nova_label, use_container_width=True):
             st.session_state[gen_key] = st.session_state.get(gen_key, 0) + 1
             st.session_state.pop(prefill_key, None)
             st.session_state.pop(f"form_came_from_{form_folder.name}", None)
@@ -420,7 +517,10 @@ def _show_form(form_folder: Path) -> None:
         with bottom_cols[col_idx + i]:
             if st.button(f"{sib_label} →", use_container_width=True,
                          key=f"nav_{dest_name}_{form_folder.name}"):
-                common = _collect_common(form_data)
+                if dest_name == "Baciloscopia" and form_folder.name == "Tuberculose_v5":
+                    common = _collect_tb_to_baciloscopia(form_data)
+                else:
+                    common = _collect_common(form_data)
                 dest_gen_key = f"form_gen_{dest_name}"
                 st.session_state[f"form_prefill_{dest_name}"] = common
                 st.session_state[f"form_came_from_{dest_name}"] = str(form_folder)
